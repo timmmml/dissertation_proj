@@ -13,6 +13,24 @@
             "state": {
               "type": "markdown",
               "state": {
+                "file": "Quaternion.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "4c63161354d4462c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "af71eb1d531843b3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
                 "file": "Daily Logs.md",
                 "mode": "source",
                 "source": false
@@ -69,7 +87,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "513c847a2941ae5c",
@@ -147,15 +166,24 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "a2fdb3ad5a0b70bb",
+  "active": "af71eb1d531843b3",
   "lastOpenFiles": [
+    "README.md",
+    "Network_models/Trainer.py~",
+    "Network_models/__init__.py~",
+    "explore.ipynb.tmp",
+    "Rotations/__init__.py~",
+    "Quaternion.md",
+    "Network_models/Trainer.py",
+    "Rotations/__pycache__/__init__.cpython-312.pyc",
+    "Rotations/__pycache__",
+    "Rotations/__init__.py",
+    "Rotations",
+    "Daily Logs.md",
     "shift operator.png",
     "Week 1.md",
-    "README.md",
-    "Quaternion.md",
     "Plans.md",
     "Quaternion distance metrics.md",
-    "Daily Logs.md",
     "exp of der.png",
     "Quaternion integration.md",
     "bak/Week 1.md",
@@ -166,16 +194,7 @@
     "bak/Plans.md",
     "bak/Daily Logs.md",
     "bak",
-    "新建文件夹",
-    "requirements_no_versions.txt",
-    "Literature/6347_learning_interpretable_control.pdf",
-    "Literature/6347_learning_interpretable_control.pdf.crdownload",
     "Quaternion Integration.md",
-    "gen_datasets",
-    "shortcuts.txt",
-    "Venv/Lib/site-packages/pip/_vendor/urllib3/contrib/_securetransport/__init__.py",
-    "Venv/Lib/site-packages/pkg_resources/_vendor/jaraco/text/__pycache__/__init__.cpython-312.pyc",
-    "Venv/Lib/site-packages/pip/_vendor/urllib3/contrib/_securetransport/bindings.py",
     "mental-rotations/Week 1.md",
     "mental-rotations/Plans.md",
     "mental-rotations/README.md",
