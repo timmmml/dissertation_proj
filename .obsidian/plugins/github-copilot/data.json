@@ -1,0 +1,10 @@
+{
+  "nodePath": "C:\\Users\\timmy\\Documents\\ENGI_Y3\\node.exe",
+  "enabled": true,
+  "hotkeys": {
+    "accept": "Ctrl-l",
+    "cancel": "Escape"
+  },
+  "suggestionDelay": 250,
+  "debug": false
+}
