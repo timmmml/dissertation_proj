@@ -1,10 +1,21 @@
 {
-  "nodePath": "C:\\Users\\timmy\\Documents\\ENGI_Y3\\node.exe",
+  "nodePath": "node.exe",
   "enabled": true,
   "hotkeys": {
     "accept": "Ctrl-l",
-    "cancel": "Escape"
+    "cancel": "Escape",
+    "request": "Ctrl-Shift-?",
+    "partial": "Ctrl-Shift-L",
+    "next": "Ctrl-Shift-ArrowDown",
+    "disable": "Ctrl-Shift-ArrowRight"
   },
   "suggestionDelay": 250,
-  "debug": false
+  "debug": false,
+  "onlyOnHotkey": false,
+  "onlyInCodeBlock": false,
+  "exclude": [],
+  "deviceSpecificSettings": [
+    "nodePath"
+  ],
+  "useDeviceSpecificSettings": false
 }

@@ -138,6 +138,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "obsidian-excalidraw-plugin:New Excalidraw drawing": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
@@ -146,17 +147,17 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "e0431cbb469f8b5c",
+  "active": "a2fdb3ad5a0b70bb",
   "lastOpenFiles": [
-    "exp of der.png",
-    "Daily Logs.md",
-    "Quaternion.md",
     "shift operator.png",
-    "README.md",
     "Week 1.md",
-    "Quaternion integration.md",
-    "Quaternion distance metrics.md",
+    "README.md",
+    "Quaternion.md",
     "Plans.md",
+    "Quaternion distance metrics.md",
+    "Daily Logs.md",
+    "exp of der.png",
+    "Quaternion integration.md",
     "bak/Week 1.md",
     "bak/README.md",
     "bak/Quaternion.md",
