@@ -18,13 +18,19 @@
                 "source": false
               }
             }
-          }
-        ]
-      },
-      {
-        "id": "4c63161354d4462c",
-        "type": "tabs",
-        "children": [
+          },
+          {
+            "id": "d40bfc397206aae3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "README.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
           {
             "id": "af71eb1d531843b3",
             "type": "leaf",
@@ -36,8 +42,21 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "12212e12307a3154",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Tasks.md",
+                "mode": "source",
+                "source": false
+              }
+            }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -87,8 +106,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "513c847a2941ae5c",
@@ -168,17 +186,20 @@
   },
   "active": "af71eb1d531843b3",
   "lastOpenFiles": [
+    "dataRNN_model_0.2q.pth_5checkpoint90.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint80.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint70.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint60.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint50.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint40.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint30.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint20.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint10.pth",
+    "dataRNN_model_0.2q.pth_5checkpoint0.pth",
+    "dataRNN_model_0.2q.pth_4checkpoint90.pth",
+    "Tasks.md",
     "README.md",
-    "Network_models/Trainer.py~",
-    "Network_models/__init__.py~",
-    "explore.ipynb.tmp",
-    "Rotations/__init__.py~",
     "Quaternion.md",
-    "Network_models/Trainer.py",
-    "Rotations/__pycache__/__init__.cpython-312.pyc",
-    "Rotations/__pycache__",
-    "Rotations/__init__.py",
-    "Rotations",
     "Daily Logs.md",
     "shift operator.png",
     "Week 1.md",
@@ -193,7 +214,6 @@
     "bak/Quaternion distance metrics.md",
     "bak/Plans.md",
     "bak/Daily Logs.md",
-    "bak",
     "Quaternion Integration.md",
     "mental-rotations/Week 1.md",
     "mental-rotations/Plans.md",
@@ -211,7 +231,6 @@
     "venv312/Lib/site-packages/notebook/static/9674eb1bd55047179038.svg",
     "venv312/Lib/site-packages/jupyterlab/static/be0a084962d8066884f7.svg",
     "venv312/Lib/site-packages/jupyterlab/static/a3b9817780214caf01e8.svg",
-    "venv312/Lib/site-packages/jupyterlab/static/9674eb1bd55047179038.svg",
-    "venv312/Lib/site-packages/jupyter_server/i18n/README.md"
+    "venv312/Lib/site-packages/jupyterlab/static/9674eb1bd55047179038.svg"
   ]
 }

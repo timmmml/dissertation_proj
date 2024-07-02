@@ -3,15 +3,46 @@
 """
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from scipy.stats import norm
+# from scipy.stats import norm
 import torch
 
 def cat_rotations(rotations):
-    """Concatenate a list of rotations."""
+    """Concatenate a list of rotations. Note: this is not to be used for tensors"""
     r_total = R.from_quat([0, 0, 0, 1])
     for r in rotations:
         r_total = r * r_total
     return r_total
+
+
+def geodesic_distance(q1, q2):
+    """Compute the geodesic distance between two quaternions.
+
+    Args:
+        q1(torch.Tensor): A tensor of shape (.,4) representing the quaternion.
+        q2(torch.Tensor): A tensor of shape (.,4) representing the quaternion.
+
+    Returns:
+        torch.Tensor: The geodesic distance between q1 and q2.
+    """
+    return 2 * torch.acos(torch.clamp(torch.abs(torch.sum(q1 * q2, dim = -1)), -1, 1))
+
+
+def integrate_velocities(omega, dt = 1.0):
+    """Integrate angular velocities to rotations.
+
+    Args:
+        omega(torch.Tensor): A tensor of shape (n,3) representing the angular velocity vector.
+        dt(float): The time step.
+
+    Returns:
+        torch.Tensor: A tensor of shape (.,4) representing the rotation.
+    """
+    assert omega.shape[-1] == 3
+    qt = torch.tensor([0.0, 0.0, 0.0, 1.0], device = omega.device) # initial quaternion
+    for i in range(omega.shape[0]):
+        q = exp_quat(omega[i] * dt)
+        qt = q_mult(q, qt)  # Left-multiply to accumulate rotations
+    return qt
 
 
 def exp_quat(omega):

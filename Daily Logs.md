@@ -34,16 +34,38 @@ Goal:
 ## Day 2: 02/07/2024
 
 - Monday's	work continued
-	- [ ] Set up basic training skeleton
-		- [ ] Deployment within `Network_models` and `Training`
+	- [x] Set up basic training skeleton
+		- [x] Deployment within `Network_models` and `Training`
           - In `Network_models`:
-            - [ ] Base network_model object which extends from the `torch.nn.Module` class
-            - [ ] Create a simple RNN model that can be configured (input and output settings)
+            - [x] Base network_model object which extends from the `torch.nn.Module` class
+            - [x] Create a simple RNN model that can be configured (input and output settings)
           - In `Training`:
-			- [ ] Base trainer object (configure as a handle which accepts directly a configuration and outputs training 
-			  logs as well as stores the trained model.)
+			- [x] Base trainer object (configure as a handle which accepts directly a configuration and outputs training logs as well as stores the trained model.)
 
-- Meeting with Guillaume (1600-1700)
+### Notes from Meeting with Guillaume (1600-1700)
+
+#### For project
+
+- Vanishing gradient problem in using the distance loss as a delta function. 
+	- solution - use point-wise geodesic loss instead (with $\lambda _{t}$ weighting that increases over time), so that all time points come into play.
+
+- Other settings: 
+	- silence period activity cost to force recurrent onto the nullspace of the angular velocities (FC readouts) - just an additional norm cost that's on for the silence period
+	
+- Look into visualisation tools [Pytorch3D]([https://pytorch3d.org/tutorials/render_textured_meshes](https://pytorch3d.org/tutorials/render_textured_meshes)) 
+	- for unit-testing quaternion operations
+	- as a primer of future work ((series of) images needed for training convnet-RNNs)
+	- *for future presentations (make GIFs) - visualising the rotation that the network conducts.*
+	
+- Once we have the model working (reasonable performance on the pre-train task and extensions, such that we are confident that the rotation is encoded into late-preparation latent activities), we can brainstorm on how to dissect the late-preparation activity as representations of rotations ([[jensen-neurips-2020-manifold.pdf]] as a starting place). 
+	- Note: this is encoding for decoding (such that the initial condition can be used to unpack the rotation throughout the action period), hence relevant to actionability inherently. 
+
+#### For exercise
+- try to implement my own recurrent cells for full control (forward step & backward step & Adam)
+	- Mini-GRU (see iLQR-VAE)
+	- Benefits: 
+		1. save memory (no need to store training data as a time series).
+		2. understand the inner workings of the GRU (and other RNNs) better.
 
 # Notes
 
