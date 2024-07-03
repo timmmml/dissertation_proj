@@ -42,7 +42,28 @@ Goal:
           - In `Training`:
 			- [x] Base trainer object (configure as a handle which accepts directly a configuration and outputs training logs as well as stores the trained model.)
 
-### Notes from Meeting with Guillaume (1600-1700)
+
+## Day 3: 03/07/2024
+
+- Set up a way to visualise network outputs
+	- [ ] Pytorch3D to start with: visualising meshes.
+	- [ ] OpenGL for more general visualisation (check if I can make them work together)
+	- [ ] Integrate these visualisations into a simple GUI from which I can 
+	- for analysis: 
+		- [ ] input a rotation
+		- [ ] select a (trained) model
+		- [ ] see a video of the rotation trajectory
+	- for future behavioural experiment
+		- [ ] have an "experiment" portal that gets me to the behavioural task (two images, forced option). 
+- implement alternative loss function calculations, experiment with techniques to speed up training (currently it's fast; but let's try to get it _very_ fast)
+	- speed-up
+		- [ ] first experiment with alternative ways to integrate those quaternions. Keep a measure of time. 
+		- [ ] experiment with doing that stuff on CPU/CUDA (currently on CUDA, but when I tested it, everything ran a bit faster on cpu). 
+	- after the speed-up steps, experiment with full-er versions of the loss function
+		- [ ] silence period loss (output norm loss during silence period to force preparation dynamics onto the nullspace of the angular velocities)
+		- [ ] geodesic loss (point-wise geodesic loss with $\lambda _{t}$ weighting that increases over time)
+		- [ ] weight normalisations
+### Notes from Meeting with Guillaume (02/07/2024, 1600-1700)
 
 #### For project
 

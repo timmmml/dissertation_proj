@@ -20,7 +20,7 @@ def gen_training_data(training_config):
             dataset = _build_task_02q(training_config)
         case _:
             raise NotImplementedError
-    torch.save(dataset, training_config["save_path"])
+    torch.save(dataset, training_config["data_save_path"])
     return dataset
 
 

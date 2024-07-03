@@ -4,6 +4,7 @@ import torch
 import os
 import shutil
 
+
 def create_splits(data, n_splits=5):
     kf = KFold(n_splits=n_splits, shuffle=True)
     splits = []
@@ -24,6 +25,7 @@ def get_dataloaders(dataset, batch_size=32, k=5):
         dataloaders.append((train_loader, test_loader))
 
     return dataloaders
+
 
 def force_remove_dir(dir_path):
     # Check if the directory exists

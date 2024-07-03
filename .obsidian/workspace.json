@@ -106,7 +106,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "513c847a2941ae5c",
@@ -175,28 +176,29 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "obsidian-excalidraw-plugin:New Excalidraw drawing": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
-      "command-palette:Open command palette": false
+      "command-palette:Open command palette": false,
+      "obsidian-excalidraw-plugin:New Excalidraw drawing": false
     }
   },
   "active": "af71eb1d531843b3",
   "lastOpenFiles": [
-    "dataRNN_model_0.2q.pth_5checkpoint90.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint80.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint70.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint60.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint50.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint40.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint30.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint20.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint10.pth",
-    "dataRNN_model_0.2q.pth_5checkpoint0.pth",
-    "dataRNN_model_0.2q.pth_4checkpoint90.pth",
+    "render_textured_meshes.ipynb.tmp",
+    "data/cow_mesh/cow_texture.png.1",
+    "data/cow_mesh/cow.mtl.1",
+    "data/cow_mesh/cow.obj.1",
+    "plot_image_grid.py.1",
+    "data/cow_mesh/cow_texture.png",
+    "data/cow_mesh/cow.mtl",
+    "data/cow_mesh/cow.obj",
+    "data/cow_mesh",
+    "plot_image_grid.py",
+    "utils/__pycache__/__init__.cpython-311.pyc",
+    "render_textured_meshes.ipynb",
     "Tasks.md",
     "README.md",
     "Quaternion.md",
@@ -230,7 +232,6 @@
     "venv312/Lib/site-packages/notebook/static/a3b9817780214caf01e8.svg",
     "venv312/Lib/site-packages/notebook/static/9674eb1bd55047179038.svg",
     "venv312/Lib/site-packages/jupyterlab/static/be0a084962d8066884f7.svg",
-    "venv312/Lib/site-packages/jupyterlab/static/a3b9817780214caf01e8.svg",
-    "venv312/Lib/site-packages/jupyterlab/static/9674eb1bd55047179038.svg"
+    "venv312/Lib/site-packages/jupyterlab/static/a3b9817780214caf01e8.svg"
   ]
 }

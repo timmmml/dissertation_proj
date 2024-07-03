@@ -17,6 +17,8 @@ class Trainer:
             config = self._default_config()
         self.config = config
         self.save_path = config["save_path"]
+        self.check_path = config.get("check_path", None)
+        self.log_path = config["log_path"]
 
         self.distance_loss = self._distance_loss_functions(config["distance_loss"])
         self.regularisation_loss = self._regularisation_loss_functions(
@@ -35,7 +37,6 @@ class Trainer:
         self.loss_fn = CombinedLoss(
             self.distance_loss, self.regularisation_loss, distance_weight
         )
-        self.writer = SummaryWriter(log_dir = config["log_path"])
         self.model.to(self.device)
 
     def refresh(self):
@@ -52,10 +53,17 @@ class Trainer:
         self.model.to(self.device)
 
     def train(
-        self, train_loader, val_loader, epochs=10, save_interval=10, save_path=None
-    ):
+        self, train_loader, val_loader, epochs=10, save_interval=10, save_path = None, check_path = None, log_path = None):
+
         if save_path is None:
             save_path = self.save_path
+        if check_path is None:
+            check_path = self.check_path
+        if log_path is None:
+            log_path = self.log_path
+
+        self.writer = SummaryWriter(log_path)
+
         for e in range(epochs):
             self.model.train()
             for i, (data, target) in enumerate(train_loader):
@@ -70,12 +78,13 @@ class Trainer:
                     "training loss", loss.item(), i + e * len(train_loader)
                 )
             if e % save_interval == 0:
-                if save_path is not None:
+                if check_path is not None:
                     self.save_checkpoint(
-                        save_path + "checkpoint" + str(e) + ".pth", e, loss
+                        check_path + "\\checkpoint" + str(e) + ".pth", e, loss
                     )
 
             self.validate(val_loader, e)
+        self.save_model(save_path)
 
     def validate(self, val_loader, epoch):
         self.model.eval()
