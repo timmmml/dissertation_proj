@@ -107,3 +107,54 @@ def q_conjugate(q):
     """
     assert q.shape[-1] == 4
     return torch.cat([q[..., 0:1], -q[..., 1:4]], -1)
+
+
+def q_slerp(q1, q2, t):
+    """Spherical linear interpolation between two quaternions.
+
+    Args:
+        q1 (torch.Tensor): A tensor of shape (.,4) representing the quaternion.
+        q2 (torch.Tensor): A tensor of shape (.,4) representing the quaternion.
+        t (float): The interpolation parameter (0 to 1)
+
+    Returns:
+        torch.Tensor: The interpolated quaternion.
+    """
+    q1 = q1 / torch.norm(q1, dim=-1, keepdim=True)
+    q2 = q2 / torch.norm(q2, dim=-1, keepdim=True)
+
+    # Compute the cosine of the angle between the two vectors
+    dot = torch.sum(q1 * q2, dim=-1, keepdim=True)
+
+    # If the dot product is negative, reverse one quaternion
+    q2 = torch.where(dot < 0, -q2, q2)
+    dot = torch.abs(dot)
+
+    # Compute the angle theta between q1 and q2
+    theta_0 = torch.acos(dot)
+    sin_theta_0 = torch.sin(theta_0)
+
+    # Compute interpolation angles
+    theta = theta_0 * t
+    sin_theta = torch.sin(theta)
+
+    # Compute the coefficients
+    s1 = torch.cos(theta) - dot * sin_theta / sin_theta_0
+    s2 = sin_theta / sin_theta_0
+
+    # Perform the interpolation
+    q_s = s1 * q1 + s2 * q2
+    q_s = q_s / torch.norm(q_s, dim=-1, keepdim=True)
+    return q_s
+
+def quat_to_euler(q):
+    """Convert a quaternion to Euler angles.
+
+    Args:
+        q(torch.Tensor): A tensor of shape (.,4) representing the quaternion.
+
+    Returns:
+        torch.Tensor: A tensor of shape (.,3) representing the Euler angles.
+    """
+    assert q.shape[-1] == 4
+    return R.from_quat(q.cpu().numpy()).as_euler('xyz')

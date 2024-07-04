@@ -106,8 +106,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "513c847a2941ae5c",
@@ -187,22 +186,23 @@
   },
   "active": "af71eb1d531843b3",
   "lastOpenFiles": [
-    "render_textured_meshes.ipynb.tmp",
-    "data/cow_mesh/cow_texture.png.1",
-    "data/cow_mesh/cow.mtl.1",
-    "data/cow_mesh/cow.obj.1",
-    "plot_image_grid.py.1",
-    "data/cow_mesh/cow_texture.png",
-    "data/cow_mesh/cow.mtl",
-    "data/cow_mesh/cow.obj",
-    "data/cow_mesh",
-    "plot_image_grid.py",
-    "utils/__pycache__/__init__.cpython-311.pyc",
-    "render_textured_meshes.ipynb",
+    "Ideal_0.gif",
+    "GUI/rendering_example.py",
+    "Network_models/__pycache__/BaseNNAgent.cpython-310.pyc",
+    "Network_models/__pycache__/RNN_models.cpython-310.pyc",
+    "train_loop.ipynb.tmp",
+    "Network_models/__pycache__/Trainer.cpython-310.pyc",
+    "Network_models/__pycache__/__init__.cpython-310.pyc",
+    "Rotations/__pycache__/__init__.cpython-310.pyc",
+    "SimulateDatasets/__pycache__/RotationDataset.cpython-310.pyc",
+    "SimulateDatasets/__pycache__/GenTrainingData.cpython-310.pyc",
+    "SimulateDatasets/__pycache__/__init__.cpython-310.pyc",
+    "GUI/output.gif",
     "Tasks.md",
+    "Daily Logs.md",
+    "data/cow_mesh/cow_texture.png",
     "README.md",
     "Quaternion.md",
-    "Daily Logs.md",
     "shift operator.png",
     "Week 1.md",
     "Plans.md",
@@ -231,7 +231,6 @@
     "venv312/Lib/site-packages/notebook/static/be0a084962d8066884f7.svg",
     "venv312/Lib/site-packages/notebook/static/a3b9817780214caf01e8.svg",
     "venv312/Lib/site-packages/notebook/static/9674eb1bd55047179038.svg",
-    "venv312/Lib/site-packages/jupyterlab/static/be0a084962d8066884f7.svg",
-    "venv312/Lib/site-packages/jupyterlab/static/a3b9817780214caf01e8.svg"
+    "venv312/Lib/site-packages/jupyterlab/static/be0a084962d8066884f7.svg"
   ]
 }

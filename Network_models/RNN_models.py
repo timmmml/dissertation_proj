@@ -5,6 +5,7 @@
 import torch
 import torch.nn as nn
 from .BaseNNAgent import BaseNNAgent
+import Rotations as Rot
 import datetime
 
 class CustomRNN(BaseNNAgent):
@@ -61,3 +62,16 @@ class CustomRNN(BaseNNAgent):
         self.predict()
         #print(f'end predict time: {datetime.datetime.now()}')
         return out
+
+    def rotate(self, q_in):
+        silence_period = 1000 - self.action_period
+        q_in = q_in.unsqueeze(0).unsqueeze(0)
+        q_in = q_in.repeat(1, silence_period, 1)
+        q_in = torch.cat((q_in, torch.zeros(1, self.action_period, 4).to(q_in.device)), dim=1)
+        q_in = q_in.to(self.fc.bias.device)
+        traj = self(q_in)
+        # Take the last 500 steps of outputs and make them a list of 500 quaternions by exponential map
+        traj = traj[0, -self.action_period:, :].detach()
+        traj = Rot.exp_quat(traj * self.dt)
+        return traj
+

@@ -117,11 +117,18 @@ class Trainer:
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         self.model.to(self.device)  # Just in case it's not there already
 
-    def save_model(self, path):
-        torch.save(self.model.state_dict(), path)
+    def save_model(self, path, full = False):
+        if full: # Save the full model
+            torch.save(self.model, path)
+        else:
+            torch.save(self.model.state_dict(), path)
 
-    def load_model(self, path):
-        self.model.load_state_dict(torch.load(path))
+    def load_model(self, path, full = False):
+        if full:
+            self.model = torch.load(path)
+        else:
+            self.model.load_state_dict(torch.load(path))
+
         self.model.to(self.device)  # Just in case it's not there already
 
     def _model_type(self, model_specs):

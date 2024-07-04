@@ -45,17 +45,33 @@ Goal:
 
 ## Day 3: 03/07/2024
 
+- Lay down groundworks for visualisation package: 
+
+- [x] Pytorch3D tutorial: visualising meshes.
+- [x] Network training pipeline checkup and debugging
+	- [x] Redo the file save and load functions
+- [x] install PyTorch3D, OpenGL, wxPython (PyTorch3D took up a lot of time)
+- [x] initial skeleton APP development (see Day 4 logs for APP structure)
+	- [x] Overall menu linking two main functions
+		- [x] Visualising network outputs (placeholder only, with control buttons implemented)
+		- [x] Behavioural experiment (placeholder only at this stage)
+## Day 4: 04/07/2024
+
 - Set up a way to visualise network outputs
-	- [ ] Pytorch3D to start with: visualising meshes.
-	- [ ] OpenGL for more general visualisation (check if I can make them work together)
-	- [ ] Integrate these visualisations into a simple GUI from which I can 
+	- [x] OpenGL for more general visualisation (check if I can make them work together)
+	- [x] Integrate these visualisations into a simple GUI from which I can 
 	- for analysis: 
-		- [ ] input a rotation
-		- [ ] select a (trained) model
-		- [ ] see a video of the rotation trajectory
+		- [x] input a rotation
+		- [x] select a (trained) model
+		- [x] see a video of the rotation trajectory
 	- for future behavioural experiment
-		- [ ] have an "experiment" portal that gets me to the behavioural task (two images, forced option). 
-- implement alternative loss function calculations, experiment with techniques to speed up training (currently it's fast; but let's try to get it _very_ fast)
+		- [?] have an "experiment" portal that gets me to the behavioural task (two images, forced option). 
+- [x] set up GUI
+
+## Day 5: 05/07/2024
+
+- [ ] sanity check: compute mean geodesic distance from random predictions. 
+- implement alternative loss function calculations, experiment with techniques to speed up training (currently it's fast; but let's try to get it _very_ fast); investigate model performance
 	- speed-up
 		- [ ] first experiment with alternative ways to integrate those quaternions. Keep a measure of time. 
 		- [ ] experiment with doing that stuff on CPU/CUDA (currently on CUDA, but when I tested it, everything ran a bit faster on cpu). 
