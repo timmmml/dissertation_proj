@@ -10,6 +10,25 @@ from scipy.spatial.transform import Rotation as R
 import Rotations as Rot
 
 
+def gen_featured_data(q_s, training_config):
+    """Accepts an array of quaternions as target quaternions and returns the corresponding features
+
+    Args:
+        q_s(np.array): An array of quaternions of shape (n,4)
+        training_config(dict): A dictionary containing the configuration for the training data generation
+
+    Returns:
+        RotationDataset: A dataset containing the features and targets
+    """
+    match training_config["task_id"]:
+        case "0.1q":
+            return _build_task_01q_featured(q_s, training_config)
+        case "0.2q":
+            return _build_task_02q_featured(q_s, training_config)
+        case _:
+            raise NotImplementedError
+
+
 def gen_training_data(training_config):
     """handle to generate training data for a given task"""
     dataset = None
@@ -20,7 +39,8 @@ def gen_training_data(training_config):
             dataset = _build_task_02q(training_config)
         case _:
             raise NotImplementedError
-    torch.save(dataset, training_config["data_save_path"])
+    if "data_save_path" in training_config and training_config["data_save_path"] is not None:
+        torch.save(dataset, training_config["data_save_path"])
     return dataset
 
 
@@ -31,13 +51,14 @@ def _build_task_01q(training_config):
         training_config["seq_len"],
         training_config["prep_phase"],
     )
-    features = torch.zeros((batch_size, seq_len, 4))
+    features = torch.zeros((batch_size, seq_len, 8))
     target = torch.zeros((batch_size, 4))
     for i in range(batch_size):
-        target[i] = torch.rand((4))
+        target[i] = (torch.rand((4)) - 0.5) * 2
+        target[i][0] = abs(target[i][0])
         target[i] = target[i] / torch.norm(target[i])
         for j in range(prep_phase):
-            features[i, j, :] = target[i]
+            features[i, j, :] = torch.cat([target[i], -target[i]], dim = 0)
 
     return RotationDataset(features, target)
 
@@ -48,12 +69,46 @@ def _build_task_02q(training_config):
         training_config["seq_len"],
         training_config["prep_phase"],
     )
-    features = torch.zeros((batch_size, seq_len, 4))
+    features = torch.zeros((batch_size, seq_len, 8))
     target = torch.zeros((batch_size, 4))
     for i in range(batch_size):
-        target[i] = torch.rand((4))
+        target[i] = (torch.rand((4)) - 0.5) * 2
+        target[i][0] = abs(target[i][0])
         target[i] = target[i] / torch.norm(target[i])
         for j in range(prep_phase):
-            features[i, j, :] = Rot.q_conjugate(target[i])
+            conj = Rot.q_conjugate(target[i])
+            features[i, j, :] = torch.cat([conj, -conj], dim = -1)
+
+    return RotationDataset(features, target)
+
+
+def _build_task_01q_featured(q_s, training_config):
+    seq_len, prep_phase = (
+        training_config["seq_len"],
+        training_config["prep_phase"],
+    )
+    batch_size = q_s.shape[0]
+    features = torch.zeros((batch_size, seq_len, 8), dtype = torch.float32)
+    target = torch.tensor(q_s, dtype = torch.float32)
+    for i in range(batch_size):
+        for j in range(prep_phase):
+            if target[i][0] < 0:
+                target[i] = -target[i]
+            features[i, j, :] = torch.cat([target[i], -target[i]], dim = 0)
+
+    return RotationDataset(features, target)
+
+def _build_task_02q_featured(q_s, training_config):
+    seq_len, prep_phase = (
+        training_config["seq_len"],
+        training_config["prep_phase"],
+    )
+    batch_size = q_s.shape[0]
+    features = torch.zeros((batch_size, seq_len, 8), dtype = torch.float32)
+    target = torch.tensor(q_s, dtype = torch.float32)
+    for i in range(batch_size):
+        for j in range(prep_phase):
+            conj = Rot.q_conjugate(target[i])
+            features[i, j, :] = torch.cat([conj, -conj], dim = -1)
 
     return RotationDataset(features, target)

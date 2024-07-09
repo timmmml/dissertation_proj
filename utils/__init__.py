@@ -3,9 +3,18 @@ from sklearn.model_selection import KFold
 import torch
 import os
 import shutil
+from .path_settings import *
+import json
+from Network_models import Trainer as t
 
 
 def create_splits(data, n_splits=5):
+    if n_splits == 1:
+        # regular train-test split
+        train_size = int(0.8 * len(data))
+        test_size = len(data) - train_size
+        train_set, test_set = torch.utils.data.random_split(data, [train_size, test_size])
+        return [(train_set, test_set)]
     kf = KFold(n_splits=n_splits, shuffle=True)
     splits = []
     for train_idx, test_idx in kf.split(data):
@@ -26,7 +35,6 @@ def get_dataloaders(dataset, batch_size=32, k=5):
 
     return dataloaders
 
-
 def force_remove_dir(dir_path):
     # Check if the directory exists
     if os.path.exists(dir_path):
@@ -39,3 +47,15 @@ def force_remove_dir(dir_path):
             print(f"Exception: {e}")
     else:
         print(f"Directory does not exist: {dir_path}")
+
+def load_trainer_model(model_name):
+    """This module returns a trainer with the appropriate model loaded if exists"""
+    try:
+        configs = json.load(open(CONFIG_PATH + f"\\{model_name}.json"))
+        trainer = t.Trainer(configs)
+        trainer.load_model(configs['save_path'] + ".pth", full = 1)
+        return trainer
+    except Exception as e:
+        print(f"Error while loading model: {model_name}")
+        print(f"Exception: {e}")
+        return None

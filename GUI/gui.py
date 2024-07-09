@@ -202,9 +202,12 @@ class MyGLCanvas(glcanvas.GLCanvas):
 
         elif self.network is not None:
             try:
+                quat = quat.to(self.device)
                 self.quat_list =list(self.network.rotate(quat).to(self.device))
+                self.time_upper = len(self.quat_list)
             except:
-                silence_period = 1000 - self.network.action_period
+                quat = quat.to(self.device)
+                silence_period = self.network.total_period - self.network.action_period
                 q_in = quat.unsqueeze(0).unsqueeze(0)
                 q_in = q_in.repeat(1, silence_period, 1)
                 q_in = torch.cat((q_in, torch.zeros(1, self.network.action_period, 4).to(q_in.device)), dim=1)
@@ -213,6 +216,10 @@ class MyGLCanvas(glcanvas.GLCanvas):
                 traj = traj[0, -self.network.action_period, :].detach()
                 traj = Rot.exp_quat(traj * self.network.dt)
                 self.quat_list = list(traj)
+            if not self.network.stepwise:
+                self.parent.log(f"predicted rotation: {self.network.pred.to(self.device)}, ideal rotation; {quat}, geodesic distance: {Rot.geodesic_distance(self.network.pred.to(self.device), quat)}")
+            else:
+                self.parent.log(f"predicted rotation: {self.network.pred[-1, -1, :].to(self.device)}, ideal rotation; {quat}, geodesic distance: {Rot.geodesic_distance(self.network.pred[-1, -1, :].to(self.device), quat)}")
 
             self.system_default = 0
 
@@ -264,6 +271,11 @@ class NetVisFrame(wx.Frame):
     """Handles the visualization of the network, child frame 1."""
     def __init__(self, parent):
         super().__init__(parent, title="OpenGL Mesh Renderer with PyTorch3D", size=(1400, 780))
+        self.left_GIF_number = 0
+        self.right_GIF_number = 0
+        self.left_GIF_name = "Ideal_"
+        self.right_GIF_name = "Model_"
+
         menubar = wx.MenuBar()
         file_menu = wx.Menu()
         load_network = wx.MenuItem(file_menu, wx.ID_OPEN, '&Load Network')
@@ -390,6 +402,14 @@ class NetVisFrame(wx.Frame):
         gif_fps_sizer.Add(self.save_gif_fps_enter, 0, wx.EXPAND | wx.ALL, 5)
         self.control_sizer.Add(gif_fps_sizer, 0, wx.EXPAND | wx.ALL, 5)
 
+        gif_name_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        gif_name_sizer.Add(wx.StaticText(self.control_panel, label="Left GIF ID:"), 0, wx.EXPAND | wx.ALL, 5)
+        gif_name_sizer.Add(self.left_GIF_name_input, 1, wx.EXPAND | wx.ALL, 5)
+        gif_name_sizer.Add(wx.StaticText(self.control_panel, label="Right GIF ID:"), 0, wx.EXPAND | wx.ALL, 5)
+        gif_name_sizer.Add(self.right_GIF_name_input, 1, wx.EXPAND | wx.ALL, 5)
+
+        self.control_sizer.Add(gif_name_sizer, 0, wx.EXPAND | wx.ALL, 5)
+
         gif_sizer = wx.BoxSizer(wx.HORIZONTAL)
         gif_sizer.Add(self.save_gif_left, 1, wx.EXPAND | wx.ALL, 5)
         gif_sizer.Add(self.save_gif_right, 1, wx.EXPAND | wx.ALL, 5)
@@ -409,10 +429,6 @@ class NetVisFrame(wx.Frame):
 
         self.panel.SetSizer(self.main_sizer)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
-        self.left_GIF_number = 0
-        self.right_GIF_number = 0
-        self.left_GIF_name = "Ideal_"
-        self.right_GIF_name = "Model_"
 
         self.log("Welcome to the Mental Rotations GUI.")
         self.log("Please load a network and a mesh object to begin.")
@@ -424,6 +440,8 @@ class NetVisFrame(wx.Frame):
         self.load_mesh_button = wx.Button(self.control_panel, label="Load Mesh Object")
         self.save_gif_fps_input = wx.TextCtrl(self.control_panel, value="30")
         self.save_gif_fps_enter = wx.Button(self.control_panel, label="Enter")
+        self.left_GIF_name_input = wx.TextCtrl(self.control_panel, value=f"{self.left_GIF_number}")
+        self.right_GIF_name_input = wx.TextCtrl(self.control_panel, value=f"{self.right_GIF_number}")
         self.save_gif_left = wx.Button(self.control_panel, label="Save GIF Left")
         self.save_gif_right = wx.Button(self.control_panel, label="Save GIF Right")
         self.save_gif_button = wx.Button(self.control_panel, label="Save GIF Both")
@@ -443,6 +461,10 @@ class NetVisFrame(wx.Frame):
         self.load_mesh_button.Bind(wx.EVT_BUTTON, self.OnLoadMeshObject)
         self.save_gif_fps_input.Bind(wx.EVT_SET_FOCUS, self.OnFocus)
         self.save_gif_fps_enter.Bind(wx.EVT_BUTTON, self.OnSaveGIFFPS)
+        self.left_GIF_name_input.Bind(wx.EVT_SET_FOCUS, self.OnFocus)
+        self.left_GIF_name_input.Bind(wx.EVT_TEXT, self.OnLeftGIFName)
+        self.right_GIF_name_input.Bind(wx.EVT_SET_FOCUS, self.OnFocus)
+        self.right_GIF_name_input.Bind(wx.EVT_TEXT, self.OnRightGIFName)
         self.save_gif_left.Bind(wx.EVT_BUTTON, self.OnSaveGIFLeft)
         self.save_gif_right.Bind(wx.EVT_BUTTON, self.OnSaveGIFRight)
         self.save_gif_button.Bind(wx.EVT_BUTTON, self.OnSaveGIF)
@@ -487,6 +509,12 @@ class NetVisFrame(wx.Frame):
         font = wx.Font(10, wx.MODERN, wx.NORMAL, wx.NORMAL)
         self.log_box.SetFont(font)
         sys.stdout = self.Logger(self)
+
+    def OnLeftGIFName(self, event):
+        self.left_GIF_number = int(self.left_GIF_name_input.GetValue())
+
+    def OnRightGIFName(self, event):
+        self.right_GIF_number = int(self.right_GIF_name_input.GetValue())
 
     def OnFocus(self, event):
         event.GetEventObject().SetValue("")

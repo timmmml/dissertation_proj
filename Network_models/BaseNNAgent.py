@@ -26,9 +26,22 @@ class BaseNNAgent(nn.Module):
         """Predict the final rotation made by the agent.
 
         Returns:
-            pred (torch.Tensor(batch_size, 4)): The final rotation made by the agent, in quaternion
+            case not stepwise (final rotation):
+                pred (torch.Tensor(batch_size, 4)): The final rotation made by the agent, in quaternion
+            case stepwise (stepwise rotation trajectory):
+                pred (torch.Tensor(batch_size, action_period, 4)): The stepwise rotation trajectory made by the agent, in quaternion
         """
-        self.out = self.out.permute(1, 0, 2)
-        self.pred = Rot.integrate_velocities(self.out[self.action_period:, : :], dt=self.dt)
-        self.out = self.out.permute(1, 0, 2)
+        if not self.stepwise:
+            self.out = self.out.permute(1, 0, 2)
+            self.pred = Rot.integrate_velocities(self.out[-self.action_period:, : :], dt=self.dt)
+            self.out = self.out.permute(1, 0, 2)
+        else:
+            self.out_quat = Rot.exp_quat(self.out[:, -self.action_period:, :] * self.dt)
+            self.out_quat = self.out_quat.permute(1, 0, 2)
+            self.pred = Rot.integrate_quat_sequential(self.out_quat)
+            self.out_quat = self.out_quat.permute(1, 0, 2)
         return self.pred
+
+
+
+

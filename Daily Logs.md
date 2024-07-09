@@ -70,15 +70,37 @@ Goal:
 
 ## Day 5: 05/07/2024
 
-- [ ] sanity check: compute mean geodesic distance from random predictions. 
+- [x] sanity check: compute mean geodesic distance from random predictions. 
 - implement alternative loss function calculations, experiment with techniques to speed up training (currently it's fast; but let's try to get it _very_ fast); investigate model performance
 	- speed-up
-		- [ ] first experiment with alternative ways to integrate those quaternions. Keep a measure of time. 
-		- [ ] experiment with doing that stuff on CPU/CUDA (currently on CUDA, but when I tested it, everything ran a bit faster on cpu). 
+		- [x] first experiment with alternative ways to integrate those quaternions. Keep a measure of time. 
+		- [x] experiment with doing that stuff on CPU/CUDA (currently on CUDA, but when I tested it, everything ran a bit faster on cpu). 
+	- *conclusion: it seems that my implementation is fast enough*
 	- after the speed-up steps, experiment with full-er versions of the loss function
-		- [ ] silence period loss (output norm loss during silence period to force preparation dynamics onto the nullspace of the angular velocities)
-		- [ ] geodesic loss (point-wise geodesic loss with $\lambda _{t}$ weighting that increases over time)
-		- [ ] weight normalisations
+		- [?] silence period loss (output norm loss during silence period to force preparation dynamics onto the nullspace of the angular velocities)
+		- [x] geodesic loss (point-wise geodesic loss with $\lambda _{t}$ weighting that increases over time)
+		- [?] weight normalisations
+		- *temporary result accomplished without the silence period loss and weight norms. Only a linear geodesic gradual loss seemed to be enough*
+	- *Bug fix: with 4D inputs, the network struggles with any negative part in the input vector. The temporary fix is to standardize the input value to have both polarities, ordered such that the first polarity is with a positive scalar part, followed by its negation*	
+
+## Day 6: 08/07/2024: result = interactive tuning traces.
+
+- [x] In-depth read (including reference checks) of Jensen et al. 2020 mGPLVM paper. Attempt to intergrate GPLVM method into my repo (say a module called mGPLVM) such that I can call it directly to do a first batch of analysis on my dataset. 
+	- [x] Check maths.
+	- [x] Check their implementation. The goal is don't use copy and paste but manually implement the method with the help of their [Github](https://github.com/tachukao/mgplvm-pytorch). 
+	- [x] Check how they do the visualisations (tuning on a manifold)
+	- [x] plan for using it to analyse RNN data: 
+		- [x] similar to Kris's paper, start with a ground-truth trajectory of states (target rotations), 
+		- [x] extract RNN neural activity to pack into $\mathbf{Y}_{ji}$ ($j$ enumerates the latent space, $i$ enumerates nerons), 
+		- [x] perform mGPLVM to get tuning functions and inferred latents.
+
+## Day 7: 09/07/2024
+
+- [ ] Write method to construct custom objects (replicating those used in Metzler-type studies)
+- [ ] Check some literature (using Gemini to provide a basic framework) on how I can implement the `big step up` in the project. 
+
+
+
 ### Notes from Meeting with Guillaume (02/07/2024, 1600-1700)
 
 #### For project
