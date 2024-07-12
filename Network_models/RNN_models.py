@@ -50,7 +50,7 @@ class CustomRNN(BaseNNAgent):
         else:
             raise ValueError("Invalid cell type. Please choose from ['RNN', 'GRU', 'LSTM']")
 
-        self.fc = nn.Linear(self.hidden_size, self.output_size)
+        self.fc_out = nn.Linear(self.hidden_size, self.output_size)
 
     def forward(self, x):
         # Metricise time complexity of this:
@@ -58,7 +58,7 @@ class CustomRNN(BaseNNAgent):
         h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device).float()
 
         out, _ = self.rnn(x, h0)
-        out = self.fc(out)
+        out = self.fc_out(out)
         self.out = out.float()
         self.predict()
         return out
@@ -82,12 +82,14 @@ class CustomRNN(BaseNNAgent):
         q_in = q_in.unsqueeze(0).unsqueeze(0)
         q_in = q_in.repeat(1, silence_period, 1)
         q_in = torch.cat((q_in, torch.zeros(1, self.action_period, 8).to(q_in.device)), dim=1)
-        q_in = q_in.to(self.fc.bias.device)
+        q_in = q_in.to(self.fc_out.bias.device)
         traj = self(q_in)
         # Take the last 500 steps of outputs and make them a list of 500 quaternions by exponential map
         traj = traj[0, -self.action_period:, :].detach()
         traj = Rot.exp_quat(traj * self.dt)
         return traj
+
+
 class FC_RNN(BaseNNAgent):
     """CustomRNN + FC layer in front
 

@@ -56,7 +56,7 @@
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -123,7 +123,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "README.md",
+                "file": "Daily Logs.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -140,7 +140,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "README.md",
+                "file": "Daily Logs.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -163,7 +163,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "README.md"
+                "file": "Daily Logs.md"
               }
             }
           }
@@ -185,36 +185,36 @@
       "obsidian-excalidraw-plugin:New Excalidraw drawing": false
     }
   },
-  "active": "d40bfc397206aae3",
+  "active": "af71eb1d531843b3",
   "lastOpenFiles": [
-    "FC_early_training.png",
-    "saved_configs/FC_32_GRU_1layer_32hidden_0.1q_configs.json",
-    "saved_configs/FC_16_GRU_1layer_32hidden_0.1q_configs.json",
-    "saved_configs/FC_32_GRU_1layer_16hidden_0.1q_configs.json",
-    "saved_configs/FC_16_GRU_1layer_16hidden_0.1q_configs.json",
-    "saved_configs/FC_32_GRU_1layer_8hidden_0.1q_configs.json",
-    "saved_configs/FC_16_GRU_1layer_8hidden_0.1q_configs.json",
-    "Train_task/__pycache__/__init__.cpython-310.pyc",
-    "Train_task/__pycache__/train_from_config_names.cpython-310.pyc",
-    "Train_task/__pycache__",
-    "Network_models/RNN_models.py~",
-    "GRU_sizes.png",
+    "mGPLVM_analyses.ipynb.tmp",
+    "saved_configs/ConvNeXt_Tiny_A1_5x6x5_centered_1.1_res128_configs.json",
+    "saved_configs/ConvNeXt_Tiny_A1_5x6x5_centered_1.1_res256_configs.json",
+    "mGPLVM_analysis_bak.ipynb.tmp",
+    "saved_configs/ConvNeXt_Tiny_A1_5x6x5_centered_1.1_configs.json",
+    "data/stim_simple/A2_5x6x5_centered.mtl",
+    "data/stim_simple/A2_5x6x5_centered.obj",
+    "data/stim_simple/B2_6x6x6_centered.mtl",
+    "data/stim_simple/B2_6x6x6_centered.obj",
+    "data/stim_simple/B1_6x6x6_centered.mtl",
+    "data/stim_simple/B1_6x6x6_centered.obj",
+    "data/stim_simple/tex/iron_block.png",
+    "data/stim_simple/New_Thing.png",
+    "data/stim_simple/D2.png",
+    "data/stim_simple/D1.png",
+    "data/stim_simple/E2.png",
+    "data/stim_simple/E1.png",
+    "data/stim_simple/C2.png",
+    "data/stim_simple/C1.png",
+    "data/stim_simple/A2.png",
+    "data/stim_simple/A1.png",
+    "Quaternion.md",
     "Daily Logs.md",
+    "README.md",
     "mgplvm-Github/TODO.md",
     "mgplvm-Github/README.md",
-    "mgplvm-Github/docsrc/source/_static/small_lvm_fig.png",
-    "mgplvm-Github/docsrc/source/_static/concept.png",
     "mgplvm-Github/docsrc/README.md",
-    "mgplvm-Github/docs/_static/css/fonts/fontawesome-webfont.svg",
-    "mgplvm-Github/docs/_static/plus.png",
-    "mgplvm-Github/docs/_static/minus.png",
-    "mgplvm-Github/docs/_static/file.png",
-    "mgplvm-Github/docs/_static/concept.png",
-    "mgplvm-Github/docs/_images/notebooks_synthetic_torus_10_1.png",
-    "mgplvm-Github/docs/_images/notebooks_synthetic_torus_6_1.png",
     "Tasks.md",
-    "README.md",
-    "Quaternion.md",
     "Week 1.md",
     "Plans.md",
     "Quaternion distance metrics.md",

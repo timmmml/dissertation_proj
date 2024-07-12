@@ -48,12 +48,17 @@ def force_remove_dir(dir_path):
     else:
         print(f"Directory does not exist: {dir_path}")
 
-def load_trainer_model(model_name):
+def load_trainer_model(model_name, special_name):
     """This module returns a trainer with the appropriate model loaded if exists"""
     try:
         configs = json.load(open(CONFIG_PATH + f"\\{model_name}.json"))
+        if not hasattr(configs['training_config'], "resolution"):
+            configs['training_config']["resolution"] =None
         trainer = t.Trainer(configs)
-        trainer.load_model(configs['save_path'] + ".pth", full = 1)
+        if special_name is not None:
+            trainer.load_model(configs['save_path'] + "_" + special_name + "\\best_model.pth", full = 1)
+        else:
+            trainer.load_model(configs['save_path'] + "\\best_model.pth", full = 1)
         return trainer
     except Exception as e:
         print(f"Error while loading model: {model_name}")

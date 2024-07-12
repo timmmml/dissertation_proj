@@ -40,11 +40,49 @@ reload(g)
 import time
 import torch
 import numpy as np
+import json
 
 from Train_task.train_from_config_names import build_config
-def network_analysis_plots(networks, task, output_dir = None, stage = "pretrain"):
-    if stage != "pretrain":
+
+def network_analysis_plots_CNN(network_config_paths, output_dir = None, special_name = None, stage = "CNN"):
+    # Generate test data for all networks:
+    if stage != "CNN":
         raise NotImplementedError
+    # Initialise a dictionary to store the results
+    results = {
+        "Total Loss": {},
+        "Output L2 Norm (rad/s)": {},
+        "Final Geodesic Distance (rad)": {},
+        "Gradually Summed Geodesic Distance (rad)": {},
+    }
+
+    for network_config_path in network_config_paths:
+        if not network_config_path.endswith(".json"):
+            network_config_path = network_config_path + ".json"
+        config = json.load(open(network_config_path))
+        network = config['model_id'] + f"_res{config['resolution']}"
+        trainer = t.Trainer(config) # initialise a trainer
+        trainer.load_model(config['save_path'] + f"\\best_model.pth", full=1)
+        test_data = torch.load(config['training_config']['data_save_path'][:-4] + "_test.pth")
+        if not os.path.isfile(config['save_path'] + f"\\best_model_out_loss.pth"):
+            features, target = test_data[0].data, test_data[0].labels
+            features = features.to(trainer.device)
+            target = target.to(trainer.device)
+            output, loss = trainer.forward(features, target)
+        else:
+            output, loss = torch.load(config['save_path'] + f"\\best_model_out_loss.pth")
+        results["Total Loss"][network] = loss.detach().to("cpu").numpy()
+        results["Output L2 Norm (rad/s)"][network] = trainer.loss_fn.recorded_regularisation_loss.to("cpu").numpy()
+        results["Final Geodesic Distance (rad)"][network] = trainer.loss_fn.final_distance_loss.to("cpu").numpy()
+        results["Gradually Summed Geodesic Distance (rad)"][network] = trainer.loss_fn.recorded_distance_loss.to("cpu").numpy()
+    results['Final Geodesic Distance (rad)']["Random"] =Rot.geodesic_distance(target, torch.rand_like(target)).cpu().numpy()
+    plot_violin(results, output_dir)
+    return results
+
+
+def network_analysis_plots_pretrain(networks, task, output_dir = None, special_name = None, stage = "pretrain"):
+    if stage != "pretrain":
+            raise NotImplementedError
     # Generate test data for all networks:
     test_data = []
     training_config = {
@@ -65,7 +103,7 @@ def network_analysis_plots(networks, task, output_dir = None, stage = "pretrain"
     }
 
     for network in networks:
-        config = build_config(network, task, 0, 1)
+        config = build_config(network, task, 0, 1, special_names=special_name)
         trainer = t.Trainer(config) # initialise a trainer
         trainer.load_model(config['save_path'] + f"\\best_model.pth", full=1)
         features, target = test_data[0].data, test_data[0].labels

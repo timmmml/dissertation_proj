@@ -1,10 +1,15 @@
 import wx
 from wx import glcanvas
-import numpy as np
-import torch
 from OpenGL.GL import *
 from OpenGL.GLUT import *
+import torch
+import pytorch3d
 from pytorch3d.io import load_objs_as_meshes
+import imageio
+from PIL import Image
+import sys
+import os
+from pathlib import Path
 from pytorch3d.renderer import (
     look_at_view_transform,
     FoVPerspectiveCameras,
@@ -14,34 +19,52 @@ from pytorch3d.renderer import (
     MeshRasterizer,
     SoftPhongShader
 )
-from pytorch3d.transforms import Rotate, RotateAxisAngle, Transform3d, quaternion_apply
+from pytorch3d.transforms import quaternion_apply
 import copy
+import numpy as np
 
 class MyGLCanvas(glcanvas.GLCanvas):
-    def __init__(self, parent, mesh):
+    def __init__(self, parent, mesh, model_canvas=False, frame=None):
         attribList = [glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 16, 0]
         super().__init__(parent, attribList=attribList)
+        self.parent = frame
         self.context = glcanvas.GLContext(self)
         self.mesh = mesh
+
+        self.model_canvas = model_canvas
+        self.network = None
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.mesh = self.mesh.to(self.device)
         self.mesh_orig = copy.deepcopy(self.mesh)
 
+        self.camera_position = 2.7  # Initial camera position
         self.renderer = self.init_renderer()
 
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_TIMER, self.OnTimer)
+        self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.timer = wx.Timer(self)
         self.timer.Start(50)
+        self.frames = []
 
         self.running = 0
-        self.quat = torch.tensor((1, 0, 0, 0)).to(self.device)
+        self.quat = torch.tensor((1, 0, 0, 0), dtype=torch.float32).to(self.device)
+
+        self.quat_list = []
+        self.quat_item = torch.tensor((1, 0, 0, 0)).to(self.device)
+
+        self.time = 0
         self.reset = 0
 
+        self.time_upper = 500
+        self.fps = 30
+
+        self.system_default = 1
+
     def init_renderer(self):
-        R, T = look_at_view_transform(2.7, 0, 180)
+        R, T = look_at_view_transform(self.camera_position, 0, 180)
         cameras = FoVPerspectiveCameras(device=self.device, R=R, T=T)
 
         lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
@@ -65,6 +88,18 @@ class MyGLCanvas(glcanvas.GLCanvas):
         )
         return renderer
 
+    def capture_frame(self):
+        width, height = self.GetSize()
+        buffer = (GLubyte * (3 * width * height))(0)
+        glReadBuffer(GL_BACK)
+        glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer)
+
+        image = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 3))
+
+        image = np.flipud(image)
+
+        return image
+
     def OnSize(self, event):
         self.Refresh()
 
@@ -73,27 +108,57 @@ class MyGLCanvas(glcanvas.GLCanvas):
         self.Render()
 
     def OnTimer(self, event):
-        # self.angle = 0
-        # if self.running:
-        #     self.angle = 5
-        # else:
-        #     self.angle = 0
-        self.quat = torch.tensor((1, 0, 0, 0)).to(self.device)
+        self.quat = torch.tensor((1, 0, 0, 0), dtype=torch.float32).to(self.device)
         if self.running:
-            self.quat = torch.tensor((np.cos(np.pi / 180), 0, np.sin(np.pi / 180), 0)).to(self.device)
+            if not self.model_canvas and self.system_default:
+                self.quat = torch.tensor((np.cos(np.pi / 180), 0, np.sin(np.pi / 180), 0)).to(self.device)
+            elif not self.model_canvas and not self.system_default:
+                if self.time == 0:
+                    self.parent.log("Ideal rotation started.")
+                self.quat = self.quat_item
+                self.time += 1
+                if self.time == self.time_upper:
+                    self.running = 0
+                    self.time = 0
+                    self.parent.log("Ideal rotation completed.")
 
+            elif self.model_canvas and not self.system_default:
+                if self.time == 0:
+                    self.parent.log("Model rotation started.")
+                self.quat = self.quat_list[self.time]
+                self.time += 1
+                if self.time == self.time_upper:
+                    self.running = 0
+                    self.time = 0
+                    self.parent.log("Model rotation completed.")
         if self.reset:
             self.reset = 0
+            self.time = 0
+            self.frames = []
+            self.quat = torch.tensor((1, 0, 0, 0), dtype=torch.float32).to(self.device)
             self.mesh = copy.deepcopy(self.mesh_orig)
+            self.system_default = 1
+
+        self.Refresh()
+
+    def OnKeyDown(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == ord('W'):
+            self.camera_position -= 0.1
+            self.update_camera_position()
+        elif keycode == ord('S'):
+            self.camera_position += 0.1
+            self.update_camera_position()
+
+    def update_camera_position(self):
+        R, T = look_at_view_transform(self.camera_position, 0, 180)
+        self.renderer.rasterizer.cameras = FoVPerspectiveCameras(device=self.device, R=R, T=T)
         self.Refresh()
 
     def Render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        # glRotatef(180, 1, 0, 0)
 
-        # R = RotateAxisAngle(self.angle, axis="Y").to(self.device) # Define the current rotation
-        # rotated_verts = R.transform_points(self.mesh.verts_padded())
         rotated_verts = quaternion_apply(self.quat, self.mesh.verts_padded())
         self.mesh = self.mesh.update_padded(rotated_verts)
 
@@ -104,164 +169,123 @@ class MyGLCanvas(glcanvas.GLCanvas):
         glDrawPixels(image.shape[1], image.shape[0], GL_RGB, GL_FLOAT, image)
 
         self.SwapBuffers()
+        if self.running:
+            frame = self.capture_frame()
+            self.frames.append(frame)
 
+    def SaveGIF(self, filename):
+        imageio.mimsave(filename, self.frames, fps=self.fps)
 
-class MainFrame(wx.Frame):
-    def __init__(self):
-        super().__init__(None, title="OpenGL Mesh Renderer with PyTorch3D", size=(1200, 560))
+    def apply_rotation(self, quat):
+        if not self.model_canvas:
+            self.quat_item = self._process_quat(quat)
+            self.system_default = 0
+        elif self.network is not None:
+            try:
+                quat = quat.to(self.device)
+                self.quat_list = list(self.network.rotate(quat).to(self.device))
+                self.time_upper = len(self.quat_list)
+            except:
+                quat = quat.to(self.device)
+                silence_period = self.network.total_period - self.network.action_period
+                q_in = quat.unsqueeze(0).unsqueeze(0)
+                q_in = q_in.repeat(1, silence_period, 1)
+                q_in = torch.cat((q_in, torch.zeros(1, self.network.action_period, 4).to(q_in.device)), dim=1)
+                q_in = q_in.to(self.network.fc.bias.device)
+                traj = self.network(q_in)
+                traj = traj[0, -self.network.action_period, :].detach()
+                traj = Rot.exp_quat(traj * self.network.dt)
+                self.quat_list = list(traj)
+            if not self.network.stepwise:
+                self.parent.log(f"predicted rotation: {self.network.pred.to(self.device)}, ideal rotation; {quat}, geodesic distance: {Rot.geodesic_distance(self.network.pred.to(self.device), quat)}")
+            else:
+                self.parent.log(f"predicted rotation: {self.network.pred[-1, -1, :].to(self.device)}, ideal rotation; {quat}, geodesic distance: {Rot.geodesic_distance(self.network.pred[-1, -1, :].to(self.device), quat)}")
+            self.system_default = 0
 
-        menubar = wx.MenuBar()
-        file_menu = wx.Menu()
-        load_network = wx.MenuItem(file_menu, wx.ID_OPEN, '&Load Network')
-        load_mesh_object = wx.MenuItem(file_menu, wx.ID_OPEN, '&Load Mesh Object')
+    def _process_quat(self, quat):
+        quat = torch.tensor(quat).to(self.device)
+        self.quat_item = Rot.q_slerp(torch.tensor((1, 0, 0, 0), dtype=torch.float32).to(self.device), quat, 1/self.time_upper)
+        return self.quat_item
 
-        file_menu.Append(load_network)
-        file_menu.Append(load_mesh_object)
-
-        screenshot_menu = wx.Menu()
-        save_gif = wx.MenuItem(screenshot_menu, wx.ID_SAVE, '&Save current comparison as GIF')
-        screenshot_menu.Append(save_gif)
-        menubar.Append(file_menu, '&File')
-        menubar.Append(screenshot_menu, '&Screenshots')
-
-        control_menu = wx.Menu()
-        sim_run_button = wx.MenuItem(control_menu, wx.ID_ANY, "&Run Simultaneously")
-        reset_button = wx.MenuItem(control_menu, wx.ID_ANY, "&Reset Rotation")
-        left_run_button = wx.MenuItem(control_menu, wx.ID_ANY, "&Run Left")
-        right_run_button = wx.MenuItem(control_menu, wx.ID_ANY, "&Run Right")
-        stop_button = wx.MenuItem(control_menu, wx.ID_ANY, "&Stop All Rotation")
-        back_button = wx.MenuItem(control_menu, wx.ID_ANY, "&Back")
-
-        for item in [sim_run_button, reset_button, left_run_button, right_run_button, stop_button, back_button]:
-            control_menu.Append(item)
-
-        menubar.Append(control_menu, '&Controls')
-
-        self.SetMenuBar(menubar)
-
-        # Bind events
-        self.Bind(wx.EVT_MENU, self.OnLoadNetwork, load_network)
-        self.Bind(wx.EVT_MENU, self.OnLoadMeshObject, load_mesh_object)
-        self.Bind(wx.EVT_MENU, self.OnSaveGIF, save_gif)
-        self.Bind(wx.EVT_MENU, self.OnSimRun, sim_run_button)
-        self.Bind(wx.EVT_MENU, self.OnReset, reset_button)
-        self.Bind(wx.EVT_MENU, self.OnLeftRun, left_run_button)
-        self.Bind(wx.EVT_MENU, self.OnRightRun, right_run_button)
-        self.Bind(wx.EVT_MENU, self.OnStop, stop_button)
-        self.Bind(wx.EVT_MENU, self.OnBack, back_button)
-
-        # Load two meshes
-        self.mesh1 = load_objs_as_meshes(["../data/cow_mesh/cow.obj"])
-        self.mesh2 = load_objs_as_meshes(["../data/cow_mesh/cow.obj"])
-
+class MasterFrame(wx.Frame):
+    def __init__(self, title):
+        super().__init__(None, title=title, size=(400, 300))
         self.panel = wx.Panel(self)
 
-        # Create two GL canvases
-        self.canvas_left_left = MyGLCanvas(self.panel, self.mesh1)
-        self.canvas_left_right = MyGLCanvas(self.panel, self.mesh2)
+        self.network_button = wx.Button(self.panel, label="Visualize Network Activity")
+        self.experiment_button = wx.Button(self.panel, label="Behavioral Experiment")
 
-        # Create control panel with buttons
-        self.control_panel = wx.Panel(self.panel)
-        self.init_control_buttons()
+        self.network_button.Bind(wx.EVT_BUTTON, self.OnVisualizeNetwork)
+        self.experiment_button.Bind(wx.EVT_BUTTON, self.OnBehavioralExperiment)
 
-        # Arrange GL canvases in a vertical box sizer
-        self.gl_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.gl_sizer.Add(self.canvas_left_left, 1, wx.EXPAND | wx.ALL, 5)
-        self.gl_sizer.Add(self.canvas_left_right, 1, wx.EXPAND | wx.ALL, 5)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.network_button, 0, wx.CENTER | wx.ALL, 10)
+        sizer.Add(self.experiment_button, 0, wx.CENTER | wx.ALL, 10)
 
-        # Arrange control panel in a vertical box sizer with fixed width
-        self.control_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.control_sizer.Add(self.load_network_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.load_mesh_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.save_gif_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.sim_run_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.reset_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.left_run_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.right_run_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.stop_button, 0, wx.EXPAND | wx.ALL, 5)
-        self.control_sizer.Add(self.back_button, 0, wx.EXPAND | wx.ALL, 5)
+        self.panel.SetSizer(sizer)
 
-        self.control_panel.SetSizer(self.control_sizer)
+        self.network_frame = None
+        self.experiment_frame = None
 
-        # Arrange the main sizer to contain the GL sizer and the control panel
-        self.main_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.main_sizer.Add(self.gl_sizer, 1, wx.EXPAND | wx.ALL, 5)
-        self.main_sizer.Add(self.control_panel, 0, wx.EXPAND | wx.ALL, 5)
+    def OnVisualizeNetwork(self, event):
+        if not self.network_frame:
+            self.network_frame = NetworkActivityFrame(title="Network Activity", parent=self)
+            self.network_frame.Show()
 
-        self.panel.SetSizer(self.main_sizer)
+    def OnBehavioralExperiment(self, event):
+        if not self.experiment_frame:
+            self.experiment_frame = ExperimentFrame(title="Behavioral Experiment", parent=self)
+            self.experiment_frame.Show()
 
-    def init_control_buttons(self):
-        self.load_network_button = wx.Button(self.control_panel, label="Load Network")
-        self.load_mesh_button = wx.Button(self.control_panel, label="Load Mesh Object")
-        self.save_gif_button = wx.Button(self.control_panel, label="Save GIF")
-        self.sim_run_button = wx.Button(self.control_panel, label="Run Simultaneously")
-        self.reset_button = wx.Button(self.control_panel, label="Reset Rotation")
-        self.left_run_button = wx.Button(self.control_panel, label="Run Left")
-        self.right_run_button = wx.Button(self.control_panel, label="Run Right")
-        self.stop_button = wx.Button(self.control_panel, label="Stop All Rotation")
-        self.back_button = wx.Button(self.control_panel, label="Back")
+    def log(self, message):
+        if self.network_frame:
+            self.network_frame.log(message)
+        if self.experiment_frame:
+            self.experiment_frame.log(message)
 
-        self.load_network_button.Bind(wx.EVT_BUTTON, self.OnLoadNetwork)
-        self.load_mesh_button.Bind(wx.EVT_BUTTON, self.OnLoadMeshObject)
-        self.save_gif_button.Bind(wx.EVT_BUTTON, self.OnSaveGIF)
-        self.sim_run_button.Bind(wx.EVT_BUTTON, self.OnSimRun)
-        self.reset_button.Bind(wx.EVT_BUTTON, self.OnReset)
-        self.left_run_button.Bind(wx.EVT_BUTTON, self.OnLeftRun)
-        self.right_run_button.Bind(wx.EVT_BUTTON, self.OnRightRun)
-        self.stop_button.Bind(wx.EVT_BUTTON, self.OnStop)
-        self.back_button.Bind(wx.EVT_BUTTON, self.OnBack)
+class NetworkActivityFrame(wx.Frame):
+    def __init__(self, title, parent):
+        super().__init__(parent, title=title, size=(800, 600))
+        self.parent = parent
 
-    def OnLoadNetwork(self, event):
-        # Implement loading network logic here
-        pass
+        self.splitter = wx.SplitterWindow(self)
+        self.canvas_panel = wx.Panel(self.splitter)
+        self.log_panel = wx.Panel(self.splitter)
 
-    def OnLoadMeshObject(self, event):
-        # Implement loading mesh object logic here
-        pass
+        self.log = wx.TextCtrl(self.log_panel, style=wx.TE_MULTILINE | wx.TE_READONLY)
 
-    def OnSaveGIF(self, event):
-        # Implement saving GIF logic here
-        pass
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.canvas_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.log_sizer = wx.BoxSizer(wx.VERTICAL)
 
-    def OnSimRun(self, event):
-        # Implement running simulation logic here
-        self.canvas_left_left.reset = 0
-        self.canvas_left_right.reset = 0
-        self.canvas_left_left.running = 1
-        self.canvas_left_right.running = 1
+        self.canvas = MyGLCanvas(self.canvas_panel, self.load_mesh(), model_canvas=True, frame=self)
 
-    def OnReset(self, event):
-        # Implement reset logic here
-        self.canvas_left_left.reset = 1
-        self.canvas_left_right.reset = 1
+        self.canvas_sizer.Add(self.canvas, 1, wx.EXPAND)
+        self.canvas_panel.SetSizer(self.canvas_sizer)
 
-    def OnLeftRun(self, event):
-        # Implement left run logic here
-        pass
+        self.log_sizer.Add(self.log, 1, wx.EXPAND)
+        self.log_panel.SetSizer(self.log_sizer)
 
-    def OnRightRun(self, event):
-        # Implement right run logic here
-        pass
+        self.splitter.SplitHorizontally(self.canvas_panel, self.log_panel)
+        self.splitter.SetSashGravity(0.8)
 
-    def OnStop(self, event):
-        # Implement stop logic here
-        self.canvas_left_left.reset = 0
-        self.canvas_left_right.reset = 0
-        self.canvas_left_left.running = 0
-        self.canvas_left_right.running = 0
+        self.sizer.Add(self.splitter, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
 
-    def OnBack(self, event):
-        # Implement back logic here
-        pass
+    def log(self, message):
+        self.log.AppendText(message + "\n")
 
+    def load_mesh(self):
+        obj_filename = os.path.join(os.path.dirname(__file__), "cow_mesh/cow.obj")
+        mesh = load_objs_as_meshes([obj_filename], device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        return mesh
 
-class MyApp(wx.App):
-    def OnInit(self):
-        frame = MainFrame()
-        frame.Show()
-        return True
+    class MyApp(wx.App):
+        def OnInit(self):
+            self.frame = MasterFrame(title="3D Visualization and Experimentation")
+            self.frame.Show()
+            return True
 
-
-if __name__ == "__main__":
-    app = MyApp()
-    app.MainLoop()
+    if __name__ == "__main__":
+        app = MyApp()
+        app.MainLoop()

@@ -52,6 +52,8 @@ class MyGLCanvas(glcanvas.GLCanvas):
     def __init__(self, parent, mesh, model_canvas = False, frame = None):
         attribList = [glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 16, 0]
         super().__init__(parent, attribList=attribList)
+
+        self.cam_pos = 2.7
         self.parent = frame
         self.context = glcanvas.GLContext(self)
         self.mesh = mesh
@@ -86,9 +88,10 @@ class MyGLCanvas(glcanvas.GLCanvas):
         self.fps = 30
 
         self.system_default = 1
+        self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
     def init_renderer(self):
-        R, T = look_at_view_transform(2.7, 0, 180)
+        R, T = look_at_view_transform(self.cam_pos, 0, 180)
         cameras = FoVPerspectiveCameras(device=self.device, R=R, T=T)
 
         lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
@@ -112,6 +115,11 @@ class MyGLCanvas(glcanvas.GLCanvas):
         )
         return renderer
 
+    def update_renderer(self):
+        R, T = look_at_view_transform(self.cam_pos, 0, 180)
+        self.renderer.rasterizer.cameras = FoVPerspectiveCameras(device=self.device, R=R, T=T)
+        self.Refresh()
+
     def capture_frame(self):
         width, height = self.GetSize()
         buffer = (GLubyte * (3 * width * height))(0)
@@ -130,6 +138,15 @@ class MyGLCanvas(glcanvas.GLCanvas):
     def OnPaint(self, event):
         self.SetCurrent(self.context)
         self.Render()
+
+    def OnKeyDown(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == ord('W'):
+            self.cam_pos -= 0.1
+            self.update_renderer()
+        elif keycode == ord('S'):
+            self.cam_pos += 0.1
+            self.update_renderer()
 
     def OnTimer(self, event):
         # self.angle = 0
@@ -609,11 +626,11 @@ class NetVisFrame(wx.Frame):
                 return
 
             pathname = fileDialog.GetPath()
-            mesh = load_objs_as_meshes([pathname])
-            self.canvas_left_left.mesh = mesh
-            self.canvas_left_left.mesh_orig = copy.deepcopy(mesh)
-            self.canvas_left_right.mesh = mesh
-            self.canvas_left_right.mesh_orig = copy.deepcopy(mesh)
+            mesh = load_objs_as_meshes([pathname]).to(self.canvas_left_left.device)
+            self.canvas_left_left.mesh = mesh.to(self.canvas_left_left.device)
+            self.canvas_left_left.mesh_orig = copy.deepcopy(mesh.to(self.canvas_left_left.device))
+            self.canvas_left_right.mesh = mesh.to(self.canvas_left_right.device)
+            self.canvas_left_right.mesh_orig = copy.deepcopy(mesh.to(self.canvas_left_right.device))
 
             wx.MessageBox('Mesh Object Loaded Successfully', 'Info', wx.OK | wx.ICON_INFORMATION)
             self.log("Mesh object loaded successfully, both canvases now set to display the new mesh object.")

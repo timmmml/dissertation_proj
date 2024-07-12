@@ -29,7 +29,7 @@ Returns:
 """
 #%%
 from utils import goto_project_root
-from utils.path_settings import MODEL_SAVE_PATH, DATA_PATH, LOG_PATH, CONFIG_PATH
+from utils.path_settings import MODEL_SAVE_PATH, DATA_PATH, LOG_PATH, CONFIG_PATH, OBJECT_PATH
 from torch.utils.tensorboard import SummaryWriter
 import SimulateDatasets.GenTrainingData as g
 from utils import create_splits, get_dataloaders, force_remove_dir
@@ -45,21 +45,25 @@ from pytorch3d.transforms import so3_relative_angle
 from pytorch3d.transforms import quaternion_to_matrix
 import json
 
-def train_from_config_names(network_name_epochs, task_name, re_train = False):
+def train_from_config_names(network_name_epochs, task_name, re_train = False, special_names = None):
     for network_name in network_name_epochs.keys():
-        train_from_config_name(network_name, network_name_epochs[network_name], task_name, re_train)
+        t = train_from_config_name(network_name, network_name_epochs[network_name], task_name, re_train, special_names)
+        return t
 
-def train_from_config_name(network_name, epochs, task_name, re_train):
-    configs = build_config(network_name, task_name, re_train = re_train)
+def train_from_config_name(network_name, epochs, task_name, re_train, special_names):
+    configs = build_config(network_name, task_name, re_train = re_train, special_names = special_names)
     if configs is None:
         print("Config already exists and re_train set to True. Skipping training.")
         return None
-
+    print(configs["training_config"]["data_save_path"][len(DATA_PATH)+1:])
+    print(os.listdir(DATA_PATH))
     # Check if there is already simulated training data for this task.
-    if configs["training_config"]["data_save_path"] not in os.listdir(DATA_PATH):
+    if configs["training_config"]["data_save_path"][len(DATA_PATH)+1:] not in os.listdir(DATA_PATH):
         # Generate the training data
+        print(f"Generating training data for {network_name} on task {task_name}")
         data = g.gen_training_data(configs["training_config"])
     else:
+        print(f"Loading training data for {network_name} on task {task_name}")
         data = torch.load(configs["training_config"]["data_save_path"])
 
     dataloaders = get_dataloaders(data, batch_size = configs["training_config"]["mini_batch_size"], k = 5)
@@ -79,6 +83,7 @@ def train_from_config_name(network_name, epochs, task_name, re_train):
         sub_check_path = configs["check_path"] + f"\\split_{i + 1}"
 
         force_remove_dir(sub_log_path) # Probably redundant but helps to ensure no old logs are kept
+        os.makedirs(sub_log_path, exist_ok = True)
         os.makedirs(sub_check_path, exist_ok = True)
 
         trainer.train(train_loader,
@@ -94,7 +99,7 @@ def train_from_config_name(network_name, epochs, task_name, re_train):
     trainer.save_model(configs["save_path"] + f"\\best_model.pth", full=1)
 
 
-def build_config(network_name, task_name, re_train, retrieve_config = False):
+def build_config(network_name, task_name, re_train, retrieve_config = False, special_names = None):
     # The last argument is for retrieving the config if it already exists
     pretraining_networks = [
         "GRU_1layer_8hidden",
@@ -120,7 +125,11 @@ def build_config(network_name, task_name, re_train, retrieve_config = False):
     ]  # This is incomplete. The plan is to investigate across these and implement silence-phase activity
     # suppression on the best performing networks to investigate effects on training.
     # Then can investigate effects of overall regularisation.
+    cnn_networks = [
+        "CNN_FC_16_GRU_1layer_8hidden",
+    ]
     pretraining_tasks = ["0.1q", "0.2q"]
+    cnn_tasks = ['1.1']
     network_name_short = network_name[:-len("_silence_suppressed")] if network_name.endswith("silence_suppressed") else network_name
 
     assert ((network_name_short in pretraining_networks and task_name in pretraining_tasks)
@@ -128,6 +137,8 @@ def build_config(network_name, task_name, re_train, retrieve_config = False):
                         network_name_short not in pretraining_networks and task_name not in pretraining_tasks)), \
         "Invalid network-task combination"
 
+    if network_name_short in cnn_networks:
+        return build_config_cnn(network_name, task_name, re_train, retrieve_config, special_names)
     seq_len = 100
     prep_phase = 50
     base_config = {"model_specs": {
@@ -140,13 +151,14 @@ def build_config(network_name, task_name, re_train, retrieve_config = False):
             "output_size": 3,
             "cell_type": None,  # to be added
         }
-    }, "model_id": network_name, "device": "cuda", "optimizer_specs": {
+    }, "model_id": network_name, "device": "cuda", "scheduler": True, # Uses the ReduceLROnPlateau scheduler
+        "optimizer_specs": {
         "optimizer_name": "Adam",
         "optimizer_params": {
-            "lr": 0.001
+            "lr": 0.01
         }
-    }, "distance_loss": "geodesic_gradual", "gradual_loss_weighting": "linear", "regularisation_loss": "L2",
-        "distance_weight": 0.9, "output_regs_weight": 0.1, "silence_activity": False,
+    }, "distance_loss": "geodesic_gradual", "gradual_loss_weighting": "constant+linear", "regularisation_loss": "L2",
+        "distance_weight": 1, "output_regs_weight": 1, "silence_activity": False,
         # silence_activity is the knob for suppressing activity in the silence phase
         "training_config": {
             "task_id": "0.2q",
@@ -165,6 +177,11 @@ def build_config(network_name, task_name, re_train, retrieve_config = False):
         base_config['model_specs']['model_params']['stepwise'] = True
     else:
         base_config['model_specs']['model_params']['stepwise'] = False
+
+    if special_names is not None:
+        base_config['save_path'] = base_config['save_path'] + f"_{special_names}"
+        base_config['check_path'] = base_config['check_path'] + f"_{special_names}"
+        base_config['log_path'] = base_config['log_path'] + f"_{special_names}"
 
     for path in [base_config['save_path'], base_config['log_path'], base_config['check_path']]:
         if not os.path.exists(path):
@@ -303,3 +320,92 @@ def build_config(network_name, task_name, re_train, retrieve_config = False):
         base_config["training_config"]["task_id"] = "0.1q"
 
     return base_config
+
+def build_config_cnn(network_name, task_name, re_train, retrieve_config = False, special_names = None):
+    seq_len = 100
+    prep_phase = 50
+    RNN_model_name = network_name[4:]
+    base_config = build_config(RNN_model_name, "0.1q", re_train=False, retrieve_config=True, special_names=special_names)
+    base_config['model_specs']['model_name'] = "Custom_CNN"
+    base_config['model_specs']['model_path'] = "Network_models.CNN_models"
+    base_config['model_specs']['model_params']['conv_output'] = 64
+    base_config['model_specs']['model_params']['conv_layers'] = [
+        {"type": "Conv2d",
+            "in_channels": 1,
+            "out_channels": 16,
+            "kernel_size": 3,
+            "stride": 1},
+        {"type": "ReLU"},
+        {"type": "MaxPool2d",
+            "kernel_size": 2,
+            "stride": 2},
+        {"type": "Conv2d",
+            "in_channels": 16,
+            "out_channels": 32,
+            "kernel_size": 3,
+            "stride": 1},
+        {"type": "ReLU"},
+        {"type": "MaxPool2d",
+            "kernel_size": 2,
+            "stride": 2},
+        {"type": "Conv2d",
+            "in_channels": 32,
+            "out_channels": 64,
+            "kernel_size": 3,
+            "stride": 1},
+        {"type": "ReLU"},
+        {"type": "MaxPool2d",
+            "kernel_size": 2,
+            "stride": 2},
+    ]
+
+
+    base_config['training_config']["task_id"] = task_name
+    base_config['training_config']['data_save_path'] = DATA_PATH + f"\\Data_{task_name}.pth"
+    base_config['training_config']['object_path'] = OBJECT_PATH + "\\cow_mesh\\cow.obj"
+    base_config['save_path'] = MODEL_SAVE_PATH + f"\\{network_name}_{task_name}_model"
+    base_config['log_path'] = LOG_PATH + f"\\{network_name}_{task_name}_model"
+    base_config['check_path'] = MODEL_SAVE_PATH + f"\\{network_name}_model_checkpoints"
+    for path in [base_config['save_path'], base_config['log_path'], base_config['check_path']]:
+        if not os.path.exists(path):
+            os.makedirs(path)
+        elif not re_train:
+            print(f"Path already exists for {network_name} in task {task_name}. Assume the model is already trained.")
+            if not retrieve_config:
+                return None
+        else: # re_train
+            force_remove_dir(path)
+            os.makedirs(path)
+    return base_config
+
+
+def build_config_Imported_Module(network_name, task_name, rnn_type, re_train, retrieve_config = False, special_names = None, **kwargs):
+    """TO BE IMPLEMENTED. AT THIS POINT DO THIS MANULLY (SEE IMPORTED TRAINING NOTEBOOK)"""
+    # The network_name is at this point going to be "ConvNeXt_Tiny_FC2__RNN"
+    seq_len = 100
+    prep_phase = 50
+    RNN_model_name = network_name[4:]
+    base_config = build_config(RNN_model_name, "0.1q", re_train=False, retrieve_config=True, special_names=special_names)
+    base_config['model_specs']['model_name'] = "Custom_CNN"
+    base_config['model_specs']['model_path'] = "Network_models.CNN_models"
+    base_config['model_specs']['model_params']['conv_output'] = 64
+
+
+    base_config['training_config']["task_id"] = task_name
+    base_config['training_config']['data_save_path'] = DATA_PATH + f"\\Data_{task_name}.pth"
+    base_config['training_config']['object_path'] = OBJECT_PATH + "\\cow_mesh\\cow.obj"
+    base_config['save_path'] = MODEL_SAVE_PATH + f"\\{network_name}_{task_name}_model"
+    base_config['log_path'] = LOG_PATH + f"\\{network_name}_{task_name}_model"
+    base_config['check_path'] = MODEL_SAVE_PATH + f"\\{network_name}_model_checkpoints"
+    for path in [base_config['save_path'], base_config['log_path'], base_config['check_path']]:
+        if not os.path.exists(path):
+            os.makedirs(path)
+        elif not re_train:
+            print(f"Path already exists for {network_name} in task {task_name}. Assume the model is already trained.")
+            if not retrieve_config:
+                return None
+        else: # re_train
+            force_remove_dir(path)
+            os.makedirs(path)
+    return base_config
+

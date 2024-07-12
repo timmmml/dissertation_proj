@@ -96,11 +96,41 @@ Goal:
 
 ## Day 7: 09/07/2024
 
-- [ ] Write method to construct custom objects (replicating those used in Metzler-type studies)
-- [ ] Check some literature (using Gemini to provide a basic framework) on how I can implement the `big step up` in the project. 
+- [x] Write method to construct custom objects (replicating those used in Metzler-type studies)
+- [x] Check some literature (using Gemini to provide a basic framework) on how I can implement the `big step up` in the project. 
+- [x] Generate training recap across network structures. (added the FC-RNN structure)
+	- [x] code a custom function to take a list of network names and generate a 4-panneled plot of results of training different network hyperparameters. 
+	- [x] Train models
 
+## Day 8: 10/07/2024
 
+- [x] investigate the use of different learning-rate schedulers (concluded with using a ReduceLROnPlateau scheduler, resetting every $N = 200$ epochs)
+- [x] fix the problem involved with the local optimum solution in which the trajectory is pushed to very early in the action period (and exploit the linear weight for geodesic distance). This yields a local optima on strategies such as "spin once and hone", which creates tiers for regularisation loss (hence initial-condition depenedent).
+- [x] investigate tuning curves from mGPLVM and Ground Truth (by plotting quaternions)
+	- main difference: 
+		- in mGPLVM (as well as SO(3)), a rotation is characterised by its _outcome_ ($\pi$ rotation along an axis is roughly equivalent to a $\pi +\epsilon$ degree rotation, which is equivalently captured by a $\pi- \epsilon$ rotation along the negative axis)
+		- in trained networks (at least those that are trained well), a rotation is to be accomplished by a linearly annealing loss term on the current effective rotation's geodesic distance to the target rotation. Therefore, the rotation is to be accomplished as fast as possible, and hence the case where a rotation is the same as its conjugate ($\pi$) leads to divergent (even opposite) representations. 
+		
+- [x] Initial training loop for the CNN-RNN structure
 
+## Day 9: 11/07/2024
+
+Naive end-to-end training of the CNN-RNN structure looks helpless. The model is not learning anything. 
+- [x] Investigate transfer learning from both sides (RNN trained on outputting a sequence of rotation from some representation, CNN trained on basic object understanding)
+- [x] ConvNeXt addition + pre-trained RNN
+- Remark: it works! the model quite successfully learns the task (loss is around 0.5)
+- [x] Initial investigations with using mGPLVM to infer tuning information
+
+## Day 10: 
+
+- [x] Built a set of stimuli following the style in Shepard and Metzler paper (elbowed shapes, 5 * 2 (mirrow images))
+- [x] Tried training ConvNeXt-RNN on the stimuli as well as applying mGPLVM.
+
+- Remark: _debugged the mistake in training loop (which tends to cause erroneous validation set errors_
+- Training results: these abstract images are quite harder to train on than the cow image, perhaps due to their lack of natural prevalence for the pretrained CNN. This is actually the same as in humans encountering the task: these images are _made for_ being unfamiliar.
+- Corrected val-set loss around 1.
+- tuning curve investigations seem to suggest that the RNN neurons are relatively poorly fit. A lot worse than in the case of the cow-image. 
+- For the cow image, tuning curves show SO3 signatures such as being "periodic" (across the poles of this globe you get similar activations). Hints of periodicity in the abstract image, but not as clear. 
 ### Notes from Meeting with Guillaume (02/07/2024, 1600-1700)
 
 #### For project
