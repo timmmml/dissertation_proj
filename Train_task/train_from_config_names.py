@@ -32,6 +32,8 @@ from utils import goto_project_root
 from utils.path_settings import MODEL_SAVE_PATH, DATA_PATH, LOG_PATH, CONFIG_PATH, OBJECT_PATH
 from torch.utils.tensorboard import SummaryWriter
 import SimulateDatasets.GenTrainingData as g
+import SimulateDatasets.PretrainGenerator as p
+import SimulateDatasets.RendererGenerator as r
 from utils import create_splits, get_dataloaders, force_remove_dir
 from Network_models import Trainer as t
 from importlib import reload
@@ -45,36 +47,96 @@ from pytorch3d.transforms import so3_relative_angle
 from pytorch3d.transforms import quaternion_to_matrix
 import json
 
-def train_from_config_names(network_name_epochs, task_name, re_train = False, special_names = None):
+def train_from_config_names(network_name_epochs, task_name, re_train = False, special_names = None, dataset_used = "train", overwrite = None, add_noise = None, noise_strength = 0, infinite_data = False, additional_config={}, inits = 3, early_stop = False):
+    network_best_splits = {}
     for network_name in network_name_epochs.keys():
-        t = train_from_config_name(network_name, network_name_epochs[network_name], task_name, re_train, special_names)
-        return t
+        best_split, latest_checkpoint = train_from_config_name(network_name, network_name_epochs[network_name], task_name, re_train, special_names, dataset_used, overwrite, add_noise, noise_strength, infinite_data, additional_config, inits, early_stop)
+        network_best_splits[network_name] = (best_split, latest_checkpoint)
+    return network_best_splits
 
-def train_from_config_name(network_name, epochs, task_name, re_train, special_names):
+def train_from_config_name(network_name, epochs, task_name, re_train, special_names, dataset_used = "train", overwrite = None, add_noise = None, noise_strength = 0, infinite_data = False, additional_config = {}, inits = 3, early_stop = False):
     configs = build_config(network_name, task_name, re_train = re_train, special_names = special_names)
     if configs is None:
         print("Config already exists and re_train set to True. Skipping training.")
         return None
-    print(configs["training_config"]["data_save_path"][len(DATA_PATH)+1:])
-    print(os.listdir(DATA_PATH))
+    if infinite_data:
+        # Here we branch away from the main workflow.
+        configs['training_config']['output_noise'] = noise_strength
+        configs['training_config'] = {**configs['training_config'], **additional_config.get('training_config', {})}
+        trainer = t.Trainer(configs)
+        if task_name == "0.1q":
+            generator = p.PretrainGenerator(configs['training_config'])
+        elif task_name == "1.1":
+            generator = r.RendererGenerator(configs['training_config'])
+
+        config_name = f"\\{network_name}_{task_name}_unlimited_configs.json" if special_names is None else f"\\{network_name}_{task_name}_{special_names}_unlimited_configs.json"
+        with (open(
+                CONFIG_PATH + config_name, "w")) as f:
+            json.dump(configs, f, indent=4)
+        print(
+            f"Training {network_name} on task {task_name}, saving to {configs['save_path']}; copy the below for logs")
+        print(f"tensorboard --logdir={configs['log_path']}")
+        best_split = 0
+        best_split_loss = np.inf
+        for i in range(inits):
+            print(f"Training split {i + 1}")
+            if i:
+                trainer.refresh()
+            sub_log_path = configs["log_path"] + f"\\split_{i + 1}"
+            sub_check_path = configs["check_path"] + f"\\split_{i + 1}"
+
+            force_remove_dir(sub_log_path)  # Probably redundant but helps to ensure no old logs are kept
+            os.makedirs(sub_log_path, exist_ok=True)
+            os.makedirs(sub_check_path, exist_ok=True)
+            trainer.train_unlimited(generator,
+                          epochs=epochs,
+                          save_path=configs["save_path"] + f"\\model_{i + 1}.pth",
+                          check_path=sub_check_path,
+                          log_path=sub_log_path,
+                          early_stop=early_stop)
+            trainer.save_model(configs["save_path"] + f"\\model_{i + 1}.pth", full=1)
+            if trainer.best_val_loss_split < best_split_loss:
+                best_split_loss = trainer.best_val_loss_split
+                best_split = i + 1
+        trainer.load_best_model()
+        print(
+            f"Training {network_name} on task {task_name} complete. Saving best model to {configs['save_path']}; latest checkpoint to {trainer.latest_checkpoint}.")
+        trainer.save_model(configs["save_path"] + f"\\best_model.pth", full=1)
+        print(f"Best split for {network_name} on task {task_name} is {best_split}.")
+        return best_split, trainer.latest_checkpoint
+
+    print(configs["training_config"]["data_save_path"][len(DATA_PATH)+1:][:-4] + "_" + dataset_used + ".pth")
+    # print(os.listdir(DATA_PATH))
     # Check if there is already simulated training data for this task.
-    if configs["training_config"]["data_save_path"][len(DATA_PATH)+1:] not in os.listdir(DATA_PATH):
+    if configs["training_config"]["data_save_path"][len(DATA_PATH)+1:][:-4] + "_" + dataset_used + ".pth" not in os.listdir(DATA_PATH):
         # Generate the training data
         print(f"Generating training data for {network_name} on task {task_name}")
-        data = g.gen_training_data(configs["training_config"])
+        _ = g.gen_training_data(configs["training_config"], overwrite)
     else:
         print(f"Loading training data for {network_name} on task {task_name}")
-        data = torch.load(configs["training_config"]["data_save_path"])
+
+    data_path = configs["training_config"]["data_save_path"][:-4] if configs['training_config']['data_save_path'][-4:] == ".pth" else configs['training_config']['data_save_path']
+    data = torch.load(data_path + "_" + dataset_used + ".pth")
+    if add_noise == "input":
+        data.data += torch.randn_like(data.data) * noise_strength
+    elif add_noise == "output":
+        data.labels += torch.randn_like(data.labels) * noise_strength
+    elif add_noise == "both":
+        data.data += torch.randn_like(data.data) * noise_strength[0]
+        data.labels += torch.randn_like(data.labels) * noise_strength[1]
 
     dataloaders = get_dataloaders(data, batch_size = configs["training_config"]["mini_batch_size"], k = 5)
     trainer = t.Trainer(configs)
 
+    config_name = f"\\{network_name}_{task_name}_configs.json" if special_names is None else f"\\{network_name}_{task_name}_{special_names}_configs.json"
     with (open(
-            CONFIG_PATH + f"\\{network_name}_{task_name}_configs.json", "w")) as f:
+            CONFIG_PATH + config_name, "w")) as f:
         json.dump(configs, f, indent=4)
 
     print(f"Training {network_name} on task {task_name}, saving to {configs['save_path']}; copy the below for logs")
     print(f"tensorboard --logdir={configs['log_path']}")
+    best_split = 0
+    best_split_loss = np.inf
     for i, (train_loader, val_loader) in enumerate(dataloaders):
         print(f"Training split {i + 1}")
         if i:
@@ -85,18 +147,22 @@ def train_from_config_name(network_name, epochs, task_name, re_train, special_na
         force_remove_dir(sub_log_path) # Probably redundant but helps to ensure no old logs are kept
         os.makedirs(sub_log_path, exist_ok = True)
         os.makedirs(sub_check_path, exist_ok = True)
-
         trainer.train(train_loader,
                           val_loader,
                           epochs=epochs,
                           save_path = configs["save_path"] + f"\\model_{i+1}.pth",
                           check_path= sub_check_path,
-                          log_path = sub_log_path)
-
+                          log_path = sub_log_path,
+                          early_stop=early_stop)
         trainer.save_model(configs["save_path"] + f"\\model_{i+1}.pth", full=1)
+        if trainer.best_val_loss_split < best_split_loss:
+            best_split_loss = trainer.best_val_loss_split
+            best_split = i + 1
     trainer.load_best_model()
-    print(f"Training {network_name} on task {task_name} complete. Saving best model to {configs['save_path']}.")
+    print(f"Training {network_name} on task {task_name} complete. Saving best model to {configs['save_path']}; latest checkpoint to {trainer.latest_checkpoint}.")
     trainer.save_model(configs["save_path"] + f"\\best_model.pth", full=1)
+    print(f"Best split for {network_name} on task {task_name} is {best_split}.")
+    return best_split, trainer.latest_checkpoint
 
 
 def build_config(network_name, task_name, re_train, retrieve_config = False, special_names = None):
@@ -158,7 +224,7 @@ def build_config(network_name, task_name, re_train, retrieve_config = False, spe
             "lr": 0.01
         }
     }, "distance_loss": "geodesic_gradual", "gradual_loss_weighting": "constant+linear", "regularisation_loss": "L2",
-        "distance_weight": 1, "output_regs_weight": 1, "silence_activity": False,
+        "distance_weight": 1, "output_regs_weight": 5, "silence_activity": False,
         # silence_activity is the knob for suppressing activity in the silence phase
         "training_config": {
             "task_id": "0.2q",
@@ -197,6 +263,8 @@ def build_config(network_name, task_name, re_train, retrieve_config = False, spe
     # Switch on the silence_activity if network_name ends with "silence_suppressed"
     if network_name.endswith("silence_suppressed"):
         base_config["silence_activity"] = True
+        base_config["silence_activity_loss"] = 'L2'
+        base_config["silence_activity_weight"] = 1
 
     network_name = network_name[:-len("_silence_suppressed")] if network_name.endswith("silence_suppressed") else network_name
 

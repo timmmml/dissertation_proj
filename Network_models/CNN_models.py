@@ -106,10 +106,14 @@ class Imported_CNN_RNN(BaseNNAgent):
         else:
             raise ModuleNotFoundError("No legal convnet specs were provided.")
 
-        for param in self.conv.parameters(recurse = True):
-            param.requires_grad = False
-
-        self.conv.frozen = True
+        if model_params.get("freeze_conv", True):
+            self.conv.frozen = True
+            for param in self.conv.parameters(recurse = True):
+                param.requires_grad = False
+        else:
+            self.conv.frozen = False
+            for param in self.conv.parameters(recurse = True):
+                param.requires_grad = True
 
         self.conv_output_size = self.conv(torch.randn((1, 3, 64, 64))).shape[-3]
 
@@ -282,6 +286,78 @@ class Imported_CNN_RNN(BaseNNAgent):
         traj = self(features)[0, -self.action_period:, :].detach()
         traj = Rot.exp_quat(traj * self.dt)
         return traj
+
+class Imported_CNN_Infer(BaseNNAgent):
+    def __init__(self, model_params):
+        super(Imported_CNN_Infer, self).__init__()
+        convnet = model_params.get("convnet", "ConvNeXt_Tiny")
+        weight_string = model_params.get('weight_string', 'IMAGENET1K_V1')
+        self.stepwise = model_params.get('stepwise', False)
+        if type(convnet) == str:
+            try: #TODO: Heads-up that I am not using the weight transformation here. This may cause problems
+                module = __import__("torchvision.models", fromlist=convnet + "_Weights")
+                weights = getattr(module, convnet + "_Weights")
+                weights = getattr(weights, weight_string)
+                module = __import__("torchvision.models", fromlist=convnet.lower())
+                model = getattr(module, convnet.lower())
+                self.conv = model(weights)
+                self.conv = self.conv.features
+            except Exception as e:
+                raise NotImplementedError(f"{e}, wait for the full version!")
+        elif isinstance(convnet, nn.Module):
+            self.conv = convnet
+        else:
+            raise ModuleNotFoundError("No legal convnet specs were provided.")
+
+        if model_params.get("freeze_conv", True):
+            self.conv.frozen = True
+            for param in self.conv.parameters(recurse = True):
+                param.requires_grad = False
+        else:
+            self.conv.frozen = False
+            for param in self.conv.parameters(recurse = True):
+                param.requires_grad = True
+
+        self.conv_output_size = self.conv(torch.randn((1, 3, 64, 64))).shape[-3]
+
+        # pool the last layer
+        self.postprocess = nn.Sequential(
+            nn.AdaptiveAvgPool2d(output_size=1),
+            nn.Flatten(),
+            nn.LayerNorm(self.conv_output_size),
+        )
+
+        self.postprocess.frozen = False # No params here though
+
+        self.linear1_size = 64
+        self.linear2_size = 32
+        self.rnn_input_size = model_params.get("rnn_input_size", 16)
+
+        self.processing = nn.Sequential(
+            nn.Linear(self.conv_output_size, self.linear1_size),
+            nn.ReLU(),
+            nn.Linear(self.linear1_size, self.linear2_size),
+            nn.ReLU(),
+            nn.Linear(self.linear2_size, self.rnn_input_size),
+            nn.ReLU()
+        )
+        self.processing.frozen = False
+        self.output = nn.Linear(self.rnn_input_size, 3)
+
+    def forward(self, x):
+        """ Implements a simple forward loop.
+
+        Args: x (batch_size, 3, dim1, dim2)
+        """
+        x = self.conv(x)
+        x = self.postprocess(x)
+        x = self.processing(x)
+        self.out = self.output(x).float()
+        if len(self.out.shape) == 2:
+            self.out = self.out.unsqueeze(-2)
+        self.predict()
+        return self.out
+
 
 
 

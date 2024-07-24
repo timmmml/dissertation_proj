@@ -1,0 +1,12 @@
+# Blender 4.1.1 MTL File: 'None'
+# www.blender.org
+
+newmtl iron_block.007
+Ns 127.499992
+Ka 1.000000 1.000000 1.000000
+Ks 0.150000 0.150000 0.150000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd tex/iron_block.png

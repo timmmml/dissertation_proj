@@ -52,11 +52,11 @@ def gen_featured_data(q_s, training_config):
     return dataset
 
 
-def gen_training_data(training_config):
+def gen_training_data(training_config, overwrite = None):
     """handle to generate training data for a given task"""
     dataset = None
     saved_data_path = training_config.get("data_save_path", None)
-    if saved_data_path.endswith(".pth"):
+    if saved_data_path is not None and saved_data_path.endswith(".pth"):
         saved_data_path = saved_data_path[:-4]
         training_config["data_save_path"] = saved_data_path
         print('Warning: new paradigm. Now training configs should be without the extension as we are adding it automatically.')
@@ -67,17 +67,19 @@ def gen_training_data(training_config):
         except Exception as e:
             exists = False
 
-        if exists:
+        if exists and overwrite is None:
             message = f"Data already exists at {training_config['data_save_path']}_{phase}.pth\n"\
                       f"Do you want to overwrite it? (y/n): "
             response = input(message)
             if response == "n":
                 continue
+
             elif response != "y":
-                print("Invalid response. Skipping this phase.")
-                continue
+                raise ValueError("Invalid response. Skipping this phase.")
             else:
                 print("Overwriting data.")
+        elif overwrite is False: #skip this phase
+            continue
         match training_config["task_id"]:
             case "0.1q":
                 dataset = _build_task_01q(training_config)
@@ -176,8 +178,7 @@ def _build_task_11_featured(q_s, training_config):
             target: (batch_size, 4)
     """
     batch_size = q_s.shape[0]
-    prep_phase, object_path, resolution = (
-        training_config["prep_phase"],
+    object_path, resolution = (
         training_config.get("object_path", None),
         training_config.get("resolution", 64), # currently uses only square images for simplicity
     )
@@ -260,8 +261,7 @@ def _build_task_11(training_config, phase = "train"):
     if use_AR:
         return _build_task_11_featured(gen_AR_quaternion(batch_size), training_config)
 
-    prep_phase, object_path, resolution = (
-        training_config["prep_phase"],
+    object_path, resolution = (
         training_config.get("object_path", None),
         training_config.get("resolution", 64), # currently uses only square images for simplicity
     )

@@ -1,0 +1,206 @@
+# Wavefront OBJ file made by Mineways version 12.00, http://mineways.com
+# World: My_World_2024-07-12@08-20-03
+# Terrain file name: C:\Users\timmy\Downloads\mineways\terrainExt.png
+# Color scheme: Standard
+# Fri Jul 12 08:31:41 2024
+
+# Selection location min to max: 219, 68, 349 to 224, 72, 353
+#   Non-empty selection location min to max: 220, 68, 350 to 223, 72, 352
+
+# Set render type: Wavefront OBJ absolute indices
+# Units for the model vertex data itself: meters
+
+# 44 vertices, 42 faces (84 triangles), 10 blocks, 0 billboards/bits
+# block dimensions: X=4 by Y=5 (height) by Z=3 blocks
+# Elevation shading: no
+# Lighting: no
+# Transparent water: no
+# Map grid: no
+# File type: Export individual textures to directory tex
+# Texture output RGB: YES
+# Texture output A: YES
+# Texture output RGBA: YES
+# Export separate types: YES
+# Export individual blocks: no
+#   Material per family: YES
+#   Split by block type: YES
+# Make groups objects: no
+# Custom material: YES
+# Export lesser blocks: YES
+# Fatten lesser blocks: no
+# Simplify mesh: no
+# Double all billboard faces: no
+# Create composite overlay faces: no
+# Center model: YES
+# Use biomes: no
+# Create block faces at the borders: YES
+# Tree leaves solid: no
+# Rotate model 0.000000 degrees
+# Make Z the up direction instead of Y: no
+# Scale model by making each block 1000 mm high
+# Data operation options:
+#   Fill air bubbles: no; Seal off entrances: no; Fill in isolated tunnels in base of model: no
+#   Connect parts sharing an edge: no; Connect corner tips: no; Weld all shared edges: no
+#   Delete floating objects: trees and parts smaller than 16 blocks: no
+#   Hollow out bottom of model, making the walls 1000 mm thick: no; Superhollow: no
+# Melt snow blocks: no
+#   Debug: show separate parts as colors: no
+#   Debug: show weld blocks in bright colors: no
+
+# Full world path: C:\Users\timmy\Downloads\My_World_2024-07-12@08-20-03
+# Full terrainExt.png path: C:\Users\timmy\Downloads\mineways\terrainExt.png
+# Full current path: C:\Users\timmy\Downloads\mineways
+
+# COMMON_MC_OBJ_START
+# version: 1
+# exporter: mineways
+# world_name: My_World_2024-07-12@08-20-03
+# world_path: C:\Users\timmy\Downloads\My_World_2024-07-12@08-20-03
+# export_bounds_min: (219, 68, 349)
+# export_bounds_max: (224, 72, 353)
+# export_offset: (-222.000000, -68.000000, -351.000000)
+# block_scale: 1
+# block_origin_offset: (0.000000, 0.000000, 0.000000)
+# z_up: false
+# texture_type: INDIVIDUAL_TILES
+# has_split_blocks: true
+# COMMON_MC_OBJ_END
+
+mtllib A2_5x6x5.mtl
+
+o My_World_2024-07-12@08-20-03__219_68_349_to_224_72_353
+vn -1 0 0
+vn 0 -1 0
+vn 0 0 -1
+vn 1 0 0
+vn 0 1 0
+vn 0 0 1
+vn -0.707107 0 -0.707107
+vn -0.707107 0 0.707107
+vn 0.707107 0 -0.707107
+vn 0.707107 0 0.707107
+vn -0.707107 -0.707107 0
+vn 0 -0.707107 -0.707107
+vn 0.707107 -0.707107 0
+vn 0 -0.707107 0.707107
+vn -0.707107 0.707107 0
+vn 0 0.707107 -0.707107
+vn 0.707107 0.707107 0
+vn 0 0.707107 0.707107
+vn -0.92388 0 -0.382683
+vn -0.92388 0 0.382683
+vn 0.92388 0 -0.382683
+vn 0.92388 0 0.382683
+vn -0.382683 0 -0.92388
+vn -0.382683 0 0.92388
+vn 0.382683 0 -0.92388
+vn 0.382683 0 0.92388
+vn -0.397273 0.9177 0
+vn 0.397273 -0.9177 0
+vn 0.397273 0.9177 0
+vn -0.397273 -0.9177 0
+vn 0 0.9177 -0.397273
+vn 0 -0.9177 0.397273
+vn 0 0.9177 0.397273
+vn 0 -0.9177 -0.397273
+vn -0.440932 0.897541 0
+vn 0.440932 -0.897541 0
+vn 0.440932 0.897541 0
+vn -0.440932 -0.897541 0
+vn 0 0.897541 -0.440932
+vn 0 -0.897541 0.440932
+vn 0 0.897541 0.440932
+vn 0 -0.897541 -0.440932
+vt 0.000000000 0.000000000
+vt 1.000000000 0.000000000
+vt 0.000000000 1.000000000
+vt 1.000000000 1.000000000
+v -2 0 -1
+v -2 0 0
+v -2 1 0
+v -2 1 -1
+v -1 0 0
+v -1 0 -1
+v -1 1 -1
+v -1 1 0
+v -2 0 1
+v -2 1 1
+v -1 0 1
+v -1 1 1
+v -2 0 2
+v -2 1 2
+v -1 0 2
+v -1 1 2
+v -2 2 2
+v -2 2 1
+v -1 2 1
+v -1 2 2
+v -2 3 2
+v -2 3 1
+v -1 3 1
+v -1 3 2
+v 0 2 2
+v 0 2 1
+v 0 3 1
+v 0 3 2
+v 1 2 2
+v 1 2 1
+v 1 3 1
+v 1 3 2
+v 2 2 2
+v 2 2 1
+v 2 3 1
+v 2 3 2
+v 1 4 2
+v 1 4 1
+v 2 4 1
+v 2 4 2
+v 1 5 2
+v 1 5 1
+v 2 5 1
+v 2 5 2
+
+g Block_of_Iron
+usemtl iron_block
+f 2/2/1 3/4/1 4/3/1 1/1/1
+f 2/3/2 1/1/2 6/2/2 5/4/2
+f 1/2/3 4/4/3 7/3/3 6/1/3
+f 5/1/4 6/2/4 7/4/4 8/3/4
+f 3/1/5 8/2/5 7/4/5 4/3/5
+f 9/2/1 10/4/1 3/3/1 2/1/1
+f 9/3/2 2/1/2 5/2/2 11/4/2
+f 11/1/4 5/2/4 8/4/4 12/3/4
+f 10/1/5 12/2/5 8/4/5 3/3/5
+f 13/2/1 14/4/1 10/3/1 9/1/1
+f 13/3/2 9/1/2 11/2/2 15/4/2
+f 15/1/4 11/2/4 12/4/4 16/3/4
+f 13/1/6 15/2/6 16/4/6 14/3/6
+f 14/2/1 17/4/1 18/3/1 10/1/1
+f 10/2/3 18/4/3 19/3/3 12/1/3
+f 16/1/4 12/2/4 19/4/4 20/3/4
+f 14/1/6 16/2/6 20/4/6 17/3/6
+f 17/2/1 21/4/1 22/3/1 18/1/1
+f 18/2/3 22/4/3 23/3/3 19/1/3
+f 21/1/5 24/2/5 23/4/5 22/3/5
+f 17/1/6 20/2/6 24/4/6 21/3/6
+f 20/3/2 19/1/2 26/2/2 25/4/2
+f 19/2/3 23/4/3 27/3/3 26/1/3
+f 24/1/5 28/2/5 27/4/5 23/3/5
+f 20/1/6 25/2/6 28/4/6 24/3/6
+f 25/3/2 26/1/2 30/2/2 29/4/2
+f 26/2/3 27/4/3 31/3/3 30/1/3
+f 28/1/5 32/2/5 31/4/5 27/3/5
+f 25/1/6 29/2/6 32/4/6 28/3/6
+f 29/3/2 30/1/2 34/2/2 33/4/2
+f 30/2/3 31/4/3 35/3/3 34/1/3
+f 33/1/4 34/2/4 35/4/4 36/3/4
+f 29/1/6 33/2/6 36/4/6 32/3/6
+f 32/2/1 37/4/1 38/3/1 31/1/1
+f 31/2/3 38/4/3 39/3/3 35/1/3
+f 36/1/4 35/2/4 39/4/4 40/3/4
+f 32/1/6 36/2/6 40/4/6 37/3/6
+f 37/2/1 41/4/1 42/3/1 38/1/1
+f 38/2/3 42/4/3 43/3/3 39/1/3
+f 40/1/4 39/2/4 43/4/4 44/3/4
+f 41/1/5 44/2/5 43/4/5 42/3/5
+f 37/1/6 40/2/6 44/4/6 41/3/6

@@ -121,7 +121,7 @@ Naive end-to-end training of the CNN-RNN structure looks helpless. The model is 
 - Remark: it works! the model quite successfully learns the task (loss is around 0.5)
 - [x] Initial investigations with using mGPLVM to infer tuning information
 
-## Day 10: 
+## Day 10: 12/07/2024
 
 - [x] Built a set of stimuli following the style in Shepard and Metzler paper (elbowed shapes, 5 * 2 (mirrow images))
 - [x] Tried training ConvNeXt-RNN on the stimuli as well as applying mGPLVM.
@@ -131,6 +131,49 @@ Naive end-to-end training of the CNN-RNN structure looks helpless. The model is 
 - Corrected val-set loss around 1.
 - tuning curve investigations seem to suggest that the RNN neurons are relatively poorly fit. A lot worse than in the case of the cow-image. 
 - For the cow image, tuning curves show SO3 signatures such as being "periodic" (across the poles of this globe you get similar activations). Hints of periodicity in the abstract image, but not as clear. 
+
+## Day 11-12: 15-16/07/2024
+
+[[Meeting with Guillaume 0715]]
+From meeting, several steps forward
+- [x] Add input noise to the rotation. 
+	- [x] constant input noise
+	- [x] time-varying input noise (independent Gaussian)
+	- [x] silent activity loss?
+- [x] crank up weights/weighting function so output is gradual
+	- [x] 1. upping the activity loss weight
+	- [x] 2. downing the mean $D_{\mathrm{Geod}}$ weighting component; consider exponential weighting function across time
+Learn about VAEs 
+- [x] read this paper:[Variational Inference: A Review for Statisticians](https://arxiv.org/abs/1601.00670)
+## Day 13: 17/07/2024
+
+Experiment with VAEs on the rotated cows: 
+- [x] extend the trainer object for VAEs
+- [x] implement and train VAEs
+	- [x] experiment with vanilla version first
+
+- [x] read this paper: [[2022 ILQR VAE.pdf]]
+
+## From Day 14 to Day 17: 18, 19, 22, 23/07/2024
+[[Meeting with Guillaume 0719]]
+- VAE results: successfully implemented a VAE that does a reasonable job at compression. However, this idea (using VAE to reach reduced representation of the data) is paused for now, as if the VAE is only trained on one object just rotated differently, essentially the encoder becomes a rotation inferer and the decoder essentially tries to restore the object 3D model. 
+- Residual investigation of pretraining task: 
+	- [-] effect of adding noise in thetas directly (instead of quaternions)
+		- [?] finding: the network still learns polarised representation in the pretraining task. 
+		- [?] the only way to mitigate (really to SO3) is to introduce the closeness between the two poles within features (noisy cross time, so it would be detrimental to the neurons tuned for one pole.)
+	- [-] effect of infinite stream of training data
+		- [x] implemented a scheme to change up training data given some condition comparing train set performance to val set performance (based on an estimation of local slope) 
+		- [?] finding: the network is much better in terms of having a flatter loss landscape across the globe. 
+- Investigation of CNN-RNN capabilities
+	- proof of concept: can we train a CNN-FC to infer the rotation based on image directly? 
+	- currently this seems to be quite lousy. (Maybe because of my implementation of the infinite data stream) 
+	- shouldn't be hard at all? 
+	- [?] check if turning on the convnet params help (currently they are frozen)
+- goal: add a trigger for activating the convnet params within the training loop
+- also: add annealing terms to the several components of the loss function aside from geodesics. 
+
+[[ConvDRAW]]
+
 ### Notes from Meeting with Guillaume (02/07/2024, 1600-1700)
 
 #### For project
@@ -156,6 +199,7 @@ Naive end-to-end training of the CNN-RNN structure looks helpless. The model is 
 		1. save memory (no need to store training data as a time series).
 		2. understand the inner workings of the GRU (and other RNNs) better.
 
+[[Meeting with Guillaume 0719]]
 # Notes
 
 ## Notes on model designed

@@ -33,10 +33,10 @@ class BaseNNAgent(nn.Module):
         """
         if not self.stepwise:
             self.out = self.out.permute(1, 0, 2)
-            self.pred = Rot.integrate_velocities(self.out[-self.action_period:, : :], dt=self.dt)
+            self.pred = Rot.integrate_velocities(self.out[-self.action_period:, : :], dt=self.dt) if self.action_period is not None else Rot.integrate_velocities(self.out, dt=self.dt)
             self.out = self.out.permute(1, 0, 2)
         else:
-            self.out_quat = Rot.exp_quat(self.out[:, -self.action_period:, :] * self.dt)
+            self.out_quat = Rot.exp_quat(self.out[:, -self.action_period:, :] * self.dt) if self.action_period is not None else Rot.exp_quat(self.out * self.dt)
             self.out_quat = self.out_quat.permute(1, 0, 2)
             self.pred = Rot.integrate_quat_sequential(self.out_quat)
             self.out_quat = self.out_quat.permute(1, 0, 2)

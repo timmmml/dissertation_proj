@@ -46,6 +46,7 @@ from Train_task.train_from_config_names import build_config
 
 def network_analysis_plots_CNN(network_config_paths, output_dir = None, special_name = None, stage = "CNN"):
     # Generate test data for all networks:
+    "NOT IMPLEMENTED"
     if stage != "CNN":
         raise NotImplementedError
     # Initialise a dictionary to store the results
@@ -60,15 +61,25 @@ def network_analysis_plots_CNN(network_config_paths, output_dir = None, special_
         if not network_config_path.endswith(".json"):
             network_config_path = network_config_path + ".json"
         config = json.load(open(network_config_path))
-        network = config['model_id'] + f"_res{config['resolution']}"
+        network = config['model_id'] + f"_res{config['training_config']['resolution']}"
         trainer = t.Trainer(config) # initialise a trainer
         trainer.load_model(config['save_path'] + f"\\best_model.pth", full=1)
         test_data = torch.load(config['training_config']['data_save_path'][:-4] + "_test.pth")
-        if not os.path.isfile(config['save_path'] + f"\\best_model_out_loss.pth"):
-            features, target = test_data[0].data, test_data[0].labels
-            features = features.to(trainer.device)
-            target = target.to(trainer.device)
-            output, loss = trainer.forward(features, target)
+        # Use dataloader if needed (for large datasets split it up)
+        # set up output storage to concatenate onto (dim 0)
+        output, loss = None, None
+        if True: #not os.path.isfile(config['save_path'] + f"\\best_model_out_loss.pth"):
+            test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=128, shuffle=False)
+            for i, (features, target) in enumerate(test_dataloader):
+                features = features.to(trainer.device)
+                target = target.to(trainer.device)
+                if output is None: 
+                    output, loss = trainer.forward(features, target)
+                else: 
+                    output_n, loss_n = trainer.forward(features, target)
+                    output = torch.cat((output, output_n), dim=0)
+                    loss = torch.cat((loss, loss_n), dim=0)
+            torch.save((output, loss), config['save_path'] + f"\\best_model_out_loss.pth")
         else:
             output, loss = torch.load(config['save_path'] + f"\\best_model_out_loss.pth")
         results["Total Loss"][network] = loss.detach().to("cpu").numpy()
@@ -80,7 +91,7 @@ def network_analysis_plots_CNN(network_config_paths, output_dir = None, special_
     return results
 
 
-def network_analysis_plots_pretrain(networks, task, output_dir = None, special_name = None, stage = "pretrain"):
+def network_analysis_plots_pretrain(networks, task, output_dir = None, special_name = None, stage = "pretrain", test_data_path = None):
     if stage != "pretrain":
             raise NotImplementedError
     # Generate test data for all networks:
@@ -91,8 +102,10 @@ def network_analysis_plots_pretrain(networks, task, output_dir = None, special_n
         "seq_len": 100,
         "prep_phase": 50,
     }
-    task_data = g.gen_training_data(training_config)
-    test_data.append(task_data)
+    if test_data_path is not None:
+        test_data = torch.load(test_data_path)
+    else:
+        test_data = g.gen_training_data(training_config)
 
     # Initialise a dictionary to store the results
     results = {
@@ -106,7 +119,7 @@ def network_analysis_plots_pretrain(networks, task, output_dir = None, special_n
         config = build_config(network, task, 0, 1, special_names=special_name)
         trainer = t.Trainer(config) # initialise a trainer
         trainer.load_model(config['save_path'] + f"\\best_model.pth", full=1)
-        features, target = test_data[0].data, test_data[0].labels
+        features, target = test_data.data, test_data.labels
         features = features.to(trainer.device)
         target = target.to(trainer.device)
         output, loss = trainer.forward(features, target)
@@ -115,7 +128,8 @@ def network_analysis_plots_pretrain(networks, task, output_dir = None, special_n
         results["Final Geodesic Distance (rad)"][network] = trainer.loss_fn.final_distance_loss.to("cpu").numpy()
         results["Gradually Summed Geodesic Distance (rad)"][network] = trainer.loss_fn.recorded_distance_loss.to("cpu").numpy()
     results['Final Geodesic Distance (rad)']["Random"] =Rot.geodesic_distance(target, torch.rand_like(target)).cpu().numpy()
-    plot_violin(results, output_dir)
+    # plot_violin(results, output_dir)
+    plot_box(results, output_dir)
     return results
 
 def plot_violin(results, output_dir):
@@ -140,6 +154,39 @@ def plot_violin(results, output_dir):
         for tick, label in zip(range(len(labels)), labels):
             axes[i, j].text(tick, medians[tick], f'Median:{medians[tick]:.2f}',
                             horizontalalignment='center', color='black', weight='semibold')
+    plt.tight_layout()
+    if output_dir is not None:
+        fig.savefig(output_dir)
+    else:
+        plt.show()
+
+def plot_box(results, output_dir):
+    fig, axes = plt.subplots(2, 2, figsize=(15, 15))
+
+    for n, key in enumerate(results.keys()):
+        i = n // 2
+        j = n % 2
+        data = results[key]
+
+        # Convert dictionary to list of lists for seaborn
+        data_list = [data[net] for net in data.keys()]
+        labels = list(data.keys())
+        transparent_palette = [(1, 1, 1, 0) for _ in range(len(labels) + 1)]
+        sns.set_palette(transparent_palette)
+
+        sns.boxplot(data=data_list, ax=axes[i, j])
+        # sns.boxplot(data=data_list, ax=axes[i, j], width=0.2, showcaps=True,
+        #             boxprops={'facecolor': 'None'}, showfliers=False, whiskerprops={'linewidth': 2})
+        axes[i, j].set_title(key)
+        axes[i, j].set_xticks(np.arange(len(labels)))
+        axes[i, j].set_xticklabels(labels, rotation=30)
+        medians = [np.median(data[net]) for net in data.keys()]
+        tops = [np.max(data[net]) for net in data.keys()]
+        bots = [np.min(data[net]) for net in data.keys()]
+        for tick, label in enumerate(labels):
+            axes[i, j].text(tick, medians[tick], f'{medians[tick]:.2f}',
+                            horizontalalignment='center', color='black', weight='light')
+            axes[i, j].set_ylim(min(bots)- 0.1, max(tops) * 1.2)
     plt.tight_layout()
     if output_dir is not None:
         fig.savefig(output_dir)

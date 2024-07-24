@@ -6,6 +6,7 @@
       {
         "id": "d84dcfacb7cddd3b",
         "type": "tabs",
+        "dimension": 46.707692307692305,
         "children": [
           {
             "id": "a2fdb3ad5a0b70bb",
@@ -37,9 +38,31 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Daily Logs.md",
+                "file": "Probabilistic machine learninig 4F13.md",
                 "mode": "source",
                 "source": false
+              }
+            }
+          },
+          {
+            "id": "556614ef42f93c79",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Propositions in Taming VAE.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "95ec6ddefb834e0d",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Literature/2022 ILQR VAE.pdf"
               }
             }
           },
@@ -50,6 +73,50 @@
               "type": "markdown",
               "state": {
                 "file": "Tasks.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ],
+        "currentTab": 2
+      },
+      {
+        "id": "af280b8056024a26",
+        "type": "tabs",
+        "dimension": 53.292307692307695,
+        "children": [
+          {
+            "id": "283752cdcccd0a96",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Daily Logs.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "ea24bd5efa231508",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Meeting with Guillaume 0719.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "4d794d6113b3aa3e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Meeting with Guillaume 0723.md",
                 "mode": "source",
                 "source": false
               }
@@ -106,8 +173,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "513c847a2941ae5c",
@@ -123,7 +189,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Daily Logs.md",
+                "file": "Meeting with Guillaume 0723.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -140,7 +206,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Daily Logs.md",
+                "file": "Meeting with Guillaume 0723.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -163,7 +229,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Daily Logs.md"
+                "file": "Meeting with Guillaume 0723.md"
               }
             }
           }
@@ -185,53 +251,53 @@
       "obsidian-excalidraw-plugin:New Excalidraw drawing": false
     }
   },
-  "active": "af71eb1d531843b3",
+  "active": "4d794d6113b3aa3e",
   "lastOpenFiles": [
-    "mGPLVM_analyses.ipynb.tmp",
-    "saved_configs/ConvNeXt_Tiny_A1_5x6x5_centered_1.1_res128_configs.json",
-    "saved_configs/ConvNeXt_Tiny_A1_5x6x5_centered_1.1_res256_configs.json",
+    "requirements.txt",
+    "matlab/soc_lognormal_big.txt",
+    "matlab/SolveStateEquations.m",
+    "matlab/Solve_state_equations.m",
+    "matlab/untitled.m",
+    "train_loop.ipynb.tmp",
+    "explore.ipynb.tmp",
+    "Meeting with Guillaume 0723.md",
+    "Probabilistic machine learninig 4F13.md",
+    "Meeting with Guillaume 0719.md",
     "mGPLVM_analysis_bak.ipynb.tmp",
-    "saved_configs/ConvNeXt_Tiny_A1_5x6x5_centered_1.1_configs.json",
-    "data/stim_simple/A2_5x6x5_centered.mtl",
-    "data/stim_simple/A2_5x6x5_centered.obj",
-    "data/stim_simple/B2_6x6x6_centered.mtl",
-    "data/stim_simple/B2_6x6x6_centered.obj",
-    "data/stim_simple/B1_6x6x6_centered.mtl",
-    "data/stim_simple/B1_6x6x6_centered.obj",
-    "data/stim_simple/tex/iron_block.png",
-    "data/stim_simple/New_Thing.png",
-    "data/stim_simple/D2.png",
-    "data/stim_simple/D1.png",
-    "data/stim_simple/E2.png",
-    "data/stim_simple/E1.png",
-    "data/stim_simple/C2.png",
-    "data/stim_simple/C1.png",
-    "data/stim_simple/A2.png",
-    "data/stim_simple/A1.png",
-    "Quaternion.md",
-    "Daily Logs.md",
     "README.md",
+    "shift operator.png",
+    "Quaternion integration.md",
+    "ConvDRAW.md",
+    "mGPLVM_analyses.ipynb.tmp",
+    "Literature/NIPS-2016-towards-conceptual-compression-Paper.pdf",
+    "Literature/NIPS-2016-towards-conceptual-compression-Paper.pdf.crdownload",
+    "Daily Logs.md",
+    "Course selection.md",
+    "figures/neuron_activations/ConvNeXt_Tiny_FC_16_GRU_8_silence_suppressedcow_1.1_res128_output_activations.png",
+    "figures/neuron_activations/ConvNeXt_Tiny_FC_16_GRU_8_silence_suppressedcow_1.1_res128_hidden_activations.png",
+    "figures/neuron_activations/FC_16_GRU_1layer_8hidden_silence_suppressed_output_activations.png",
+    "figures/neuron_activations/FC_16_GRU_1layer_8hidden_silence_suppressed_hidden_activations.png",
+    "figures/neuron_activations/ConvNeXt_Tiny_FC_16_GRU_16_silence_suppressedcow_1.1_res128_output_activations.png",
+    "figures/neuron_activations/ConvNeXt_Tiny_FC_16_GRU_16_silence_suppressedcow_1.1_res128_hidden_activations.png",
+    "figures/summary/pretrain_summary_noisy_silence_suppressed_new.png",
+    "Computational statistics and machine learning 4M24.md",
+    "Meeting with Guillaume 0719 1.md",
+    "Meeting with Guillaume 0715.md",
+    "Propositions in Taming VAE.md",
+    "figures/summary/pretrain_summary_noisy_silence_suppressed.png",
+    "figures/summary/pretrain_summary_noiseless.png",
+    "Conv.md",
+    "Untitled.md",
+    "Optimisation Based approach to Control.md",
+    "Algorithm and Data Structures.md",
+    "PDE and Variational Methods.md",
+    "Brain-machine interfaces 4G10.md",
+    "Computational Neurosciece 4G3.md",
+    "Control and computation in living systems 4G7.md",
+    "Deep learning and structured data 4F10.md",
+    "Quaternion.md",
     "mgplvm-Github/TODO.md",
     "mgplvm-Github/README.md",
-    "mgplvm-Github/docsrc/README.md",
-    "Tasks.md",
-    "Week 1.md",
-    "Plans.md",
-    "Quaternion distance metrics.md",
-    "Quaternion integration.md",
-    "bak/Week 1.md",
-    "bak/README.md",
-    "bak/Quaternion.md",
-    "bak/Quaternion integration.md",
-    "bak/Quaternion distance metrics.md",
-    "bak/Plans.md",
-    "bak/Daily Logs.md",
-    "Quaternion Integration.md",
-    "mental-rotations/Week 1.md",
-    "mental-rotations/Plans.md",
-    "mental-rotations/README.md",
-    "venv312/Lib/site-packages/idna-3.7.dist-info/LICENSE.md",
-    "venv312/Lib/site-packages/httpx-0.27.0.dist-info/licenses/LICENSE.md",
-    "venv312/Lib/site-packages/httpcore-1.0.5.dist-info/licenses/LICENSE.md"
+    "mgplvm-Github/docsrc/README.md"
   ]
 }
