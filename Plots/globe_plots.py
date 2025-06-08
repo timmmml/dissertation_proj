@@ -4,10 +4,13 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+import plotly.colors as pc
 from importlib import reload
 import mgplvm as mgp
 import SimulateDatasets.GenTrainingData as g
 import Rotations as Rot
+from scipy.spatial.transform import Rotation as R
+
 
 def get_hidden_state(module, input, output):
     global hidden_states
@@ -78,7 +81,7 @@ def plot_tuning_curves_GT(trainer, configs, n_size, activation_path, gen_test_da
         qs_t[..., :] = np.sign(qs_t[..., :1]) * qs_t[..., :]  # consistent sign
         qs_t = qs_t / np.sqrt(np.sum(qs_t ** 2, axis=1, keepdims=True))  # normalize
     theta = 2 * np.arccos(qs_t[..., :1])
-    u = qs_t[..., 1:]
+    u = qs_t[..., 1:] / np.sqrt(np.sum(qs_t[..., 1:] ** 2, axis=1, keepdims=True))
     xs = 0.5 * u * theta
 
     print('\n\ntuning curves:')
@@ -132,8 +135,8 @@ def plot_tuning_curves_GT(trainer, configs, n_size, activation_path, gen_test_da
 
     # Update layout for each subplot
     fig.update_layout(
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Tuning Curves',
         legend=dict(
             title='Tuning Curves',
@@ -194,8 +197,8 @@ def plot_tuning_curves_GT(trainer, configs, n_size, activation_path, gen_test_da
     # Update layout for each subplot
     fig.update_layout(
         updatemenus=updatemenus,
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Tuning Curves',
         legend=dict(
             title='Tuning Curves',
@@ -211,7 +214,6 @@ def plot_tuning_curves_GT(trainer, configs, n_size, activation_path, gen_test_da
     pickle.dump(fig, open(configs['save_path'] + "\\best_model_tuning_curves_Ground_Truth.pkl", "wb"))
     if show:
         fig.show()
-
 
 def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=True,
                        get_hidden_state=get_hidden_state,
@@ -331,7 +333,7 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
     qs_t = np.sign(qs_t[:, :1]) * qs_t  # consistent sign
 
     theta = 2 * np.arccos(qs_t[..., :1])
-    u = qs_t[..., 1:]
+    u = qs_t[..., 1:] / np.sqrt(np.sum(qs_t[..., 1:] ** 2, axis=1, keepdims=True))
 
     xs = (0.5 *
           u * theta)
@@ -392,8 +394,8 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
 
     # Update layout for each subplot
     fig.update_layout(
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Tuning Curves',
         legend=dict(
             title='Tuning Curves',
@@ -454,8 +456,8 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
     # Update layout for each subplot
     fig.update_layout(
         updatemenus=updatemenus,
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Tuning Curves',
         legend=dict(
             title='Tuning Curves',
@@ -530,7 +532,7 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
         points = Y.shape[1]
 
     theta = 2 * np.arccos(qs_t[..., :1])
-    u = qs_t[..., 1:]
+    u = qs_t[..., 1:] / np.sqrt(np.sum(qs_t[..., 1:] ** 2, axis=1, keepdims=True))
     xs = 0.5 * u * theta
 
     print('\n\ntuning curves:')
@@ -584,8 +586,8 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
 
     # Update layout for each subplot
     fig.update_layout(
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Tuning Curves',
         legend=dict(
             title='Tuning Curves',
@@ -646,8 +648,8 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
     # Update layout for each subplot
     fig.update_layout(
         updatemenus=updatemenus,
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Tuning Curves',
         legend=dict(
             title='Tuning Curves',
@@ -665,9 +667,16 @@ def plot_tuning_curves(trainer, configs, n_size, activation_path, gen_test_data=
         fig.show()
 
 
-def plot_generic(xs, Y, labels, configs, show=False):
+def plot_generic(xs, Y, labels, configs=None, show=False, colorscale="rdbu", fig_per_row = 4, plot_plot = True, plot_globe = True, point_size = 4, alpha = 0.3, reverse_cmap = False, figsize=None):
     # Y is a list of values each of whose dimension corresponding to the length of xs.
     # labels give labels to call these plots.
+    if colorscale == "rdbu": 
+        cmap = "coolwarm"  if reverse_cmap else "coolwarm_r"
+    elif colorscale == "gnbu":
+        cmap = "GnBu" + "_r" if reverse_cmap else "GnBu"
+    else: 
+        # cmap = colorscale[0].upper() + colorscale[1:]
+        cmap = colorscale
     print('\n\nValues:')
     if isinstance(Y, list):
         for i, y in enumerate(Y):
@@ -676,24 +685,42 @@ def plot_generic(xs, Y, labels, configs, show=False):
     Y = np.array(Y)
 
     n_size = Y.shape[0]
-    plt.figure(figsize=(15, 15 * n_size / 16))
-    for i in range(n_size):
-        # mean, std = [arr.cpu().detach().numpy() for arr in [fmean, fstd]]
-        # mean = mean[0, 0, :, :]
-        mean = Y[:, :]
-        ax = plt.subplot(int(n_size / 4), 4, i + 1, projection='3d')
-        n = i
-        ax.scatter3D(xs[:, 0], xs[:, 1], xs[:, 2], c=mean[n, :], cmap='GnBu', alpha=0.3, s=4)
+    if plot_plot:
+        if figsize is None:
+            figsize = (15 * fig_per_row / 3, 15 * n_size/ (2 * fig_per_row))
+        
+        plt.figure(figsize=figsize)
+        if n_size > fig_per_row: 
+            for i in range(n_size):
+                # mean, std = [arr.cpu().detach().numpy() for arr in [fmean, fstd]]
+                # mean = mean[0, 0, :, :]
+                mean = Y[:, :]
+                ax = plt.subplot((n_size // fig_per_row )+ 1, fig_per_row, i + 1, projection='3d')
+                n = i
+                ax.scatter3D(xs[:, 0], xs[:, 1], xs[:, 2], c=mean[n, :], cmap=cmap, alpha=alpha, s=point_size)
+                # ax.scatter3D(xs[:, 0], xs[:, 1], xs[:, 2], c=mean[n, :], cmap=cmap, alpha=1, s=point_size)
+                ax.set_xticks([]);
+                ax.set_yticks([]);
+                ax.set_zticks([])
+                plt.tight_layout()
+        else: 
+            for i in range(n_size):
+                mean = Y[:, :]
+                ax = plt.subplot(1, fig_per_row, i + 1, projection='3d')
+                n = i
+                ax.scatter3D(xs[:, 0], xs[:, 1], xs[:, 2], c=mean[n, :], cmap=cmap, alpha=alpha, s=point_size)
 
-        ax.set_xticks([]);
-        ax.set_yticks([]);
-        ax.set_zticks([])
-    plt.tight_layout()
-    plt.savefig(configs['save_path'] + "\\best_model_tuning_curves_Ground_Truth.png")
-    if show:
-        plt.show()
-    plt.close()
-
+                ax.set_xticks([]);
+                ax.set_yticks([]);
+                ax.set_zticks([])
+                plt.tight_layout()
+        if configs is not None:
+            plt.savefig(configs['save_path'] + "/best_model_tuning_curves_Ground_Truth.png")
+        if show:
+            plt.show()
+        plt.close()
+    if not plot_globe:
+        return
     # Assuming you have already defined xs, fmean, and fstd appropriately
 
     # Extract mean values
@@ -703,23 +730,24 @@ def plot_generic(xs, Y, labels, configs, show=False):
     fig = go.Figure()
     for i in range(n_size):
         n = i
+        print(f"{min(mean[n, :]):.3g}, {max(mean[n, :]):.3g}")
         fig.add_trace(go.Scatter3d(
             x=xs[:, 0],
             y=xs[:, 1],
             z=xs[:, 2],
             mode='markers',
             marker=dict(
-                size=4,
-                reversescale=False,
+                size=point_size,
+                reversescale=reverse_cmap,
                 color=mean[n, :],
-                opacity=0.5,
+                opacity=alpha,
                 colorbar=dict(
                     title='Mean Value',
                     tickvals=[mean[n, :].min(), 0, mean[n, :].max()],
                     ticktext=[f"Low: {min(mean[n, :]):.3g}", f"Medium: {0}", f"High: {max(mean[n, :]):.3g}"],
                 ),
                 colorbar_title='Mean Value',
-                colorscale="gnbu"
+                colorscale=colorscale
             ),
             name=labels[n],
             showlegend=False,
@@ -728,8 +756,8 @@ def plot_generic(xs, Y, labels, configs, show=False):
 
     # Update layout for each subplot
     fig.update_layout(
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title='Loss values',
         legend=dict(
             title='Loss values',
@@ -767,8 +795,8 @@ def plot_generic(xs, Y, labels, configs, show=False):
             buttons=[
                 dict(label=labels[n],
                      method='update',
-                     args=[{'visible': [j == n for j in range(4)]}])
-                for n in range(4)
+                     args=[{'visible': [j == n for j in range(n_size)]}])
+                for n in range(n_size)
             ],
         )
     ]
@@ -776,8 +804,8 @@ def plot_generic(xs, Y, labels, configs, show=False):
     # Update layout for each subplot
     fig.update_layout(
         updatemenus=updatemenus,
-        height=800,  # Adjust height to match your matplotlib figsize
-        width=800,  # Adjust width to match your matplotlib figsize
+        height=800,  
+        width=800,  
         title="Loss values",
         legend=dict(
             title='Loss values',
@@ -790,6 +818,98 @@ def plot_generic(xs, Y, labels, configs, show=False):
             zaxis=dict(title='Z Axis')
         )
     )
-    pickle.dump(fig, open(configs['save_path'] + "\\Loss_on_circle.pkl", "wb"))
+    if configs is not None:
+        pickle.dump(fig, open(configs['save_path'] + "/Loss_on_circle.pkl", "wb"))
     if show:
         fig.show()
+
+def globe_histogram(xs, n_bins = 20, colorscale="viridis"):
+    xs = xs/np.linalg.norm(xs, axis=1)[:, None]
+    x, y, z = xs[:, 0], xs[:, 1], xs[:, 2]
+    r = np.sqrt(x**2 + y**2)
+    theta = np.arctan2(y, x)  
+
+    theta_bins = np.linspace(-np.pi, np.pi, n_bins)
+    z_bins = np.linspace(np.min(z), np.max(z), n_bins)
+
+    theta_indices = np.digitize(theta, theta_bins) - 1
+    z_indices = np.digitize(z, z_bins) - 1
+    # Test uniform z
+    # z = np.random.uniform(-1, 1, len(z))
+    hist, _, _ = np.histogram2d(theta, z, bins=[theta_bins, z_bins])
+    hist_norm = hist / np.max(np.max(hist))
+
+    # Plot the np histogram
+    fig = go.Figure(data=[go.Heatmap(
+        z=hist_norm,
+        x=theta_bins,
+        y=z_bins,
+        colorscale=colorscale,
+    )])
+    fig.show()
+
+    # Generate the bar heights
+    bar_heights = hist.flatten()
+
+    # Create meshgrid for spherical coordinates
+    theta_grid, z_grid = np.meshgrid(theta_bins[:-1], z_bins[:-1])
+    x_base = np.cos(theta_grid)
+    y_base = np.sin(theta_grid)
+
+    # Determine the bar tips' coordinates based on frequency (histogram height)
+    x_tip = (1 + bar_heights) * x_base.flatten()
+    y_tip = (1 + bar_heights) * y_base.flatten()
+    z_tip = bar_heights * z_grid.flatten()
+
+    # Flatten the base coordinates for plotting
+    x_base_flat = x_base.flatten()
+    y_base_flat = y_base.flatten()
+    z_base_flat = z_grid.flatten()
+
+    # Create a 3D scatter plot for the bars
+    fig = go.Figure()
+
+    # Plot the bars as line segments
+    for xb, yb, zb, xt, yt, zt, height in zip(
+        x_base_flat, y_base_flat, z_base_flat, x_tip, y_tip, z_tip, bar_heights
+    ):
+        normalised_height = height / np.max(bar_heights)
+        fig.add_trace(
+            go.Scatter3d(
+                x=[xb, xt],
+                y=[yb, yt],
+                z=[zb, zt],
+                mode="lines",
+                line=dict(
+                    width=8, 
+                    color=pc.sample_colorscale(colorscale, [normalised_height])[0], 
+                    colorscale=colorscale,
+                ),
+                opacity = 0.5,
+                showlegend=False,
+            )
+        )
+
+    fig.update_traces(marker=dict(
+        colorbar=dict(
+            title="Frequency",
+            tickvals=[0, 1],
+            ticktext=["Low", "High"],
+        )
+    ))
+    # Update layout for better visualization
+    fig.update_layout(
+        height=800, 
+        width=800,
+        title="Histogram on a Sphere",
+        scene=dict(
+            xaxis=dict(title="X Axis"),
+            yaxis=dict(title="Y Axis"),
+            zaxis=dict(title="Z Axis")
+        ),
+        scene_aspectmode="cube",
+    )
+
+
+    # Show the plot
+    fig.show()

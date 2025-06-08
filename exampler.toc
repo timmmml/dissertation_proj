@@ -1,0 +1,8 @@
+\beamer@sectionintoc {1}{Motivation}{2}{0}{1}
+\beamer@subsectionintoc {1}{1}{Controller Setup}{4}{0}{1}
+\beamer@sectionintoc {2}{CAN Theory: What is it and what have we learned?}{6}{0}{2}
+\beamer@subsectionintoc {2}{1}{Ring Attractor Theory}{8}{0}{2}
+\beamer@subsectionintoc {2}{2}{Attractor Network as Optimized Solutions}{15}{0}{2}
+\beamer@sectionintoc {3}{My Dissertation Project}{17}{0}{3}
+\beamer@subsectionintoc {3}{1}{Training Attractors with minimal assumptions}{18}{0}{3}
+\beamer@subsectionintoc {3}{2}{Learning motor control with an attractor}{24}{0}{3}

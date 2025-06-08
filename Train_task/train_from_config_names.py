@@ -27,7 +27,6 @@ Args:
 Returns:
     trained_paths: a dictionary specifying the paths of the best trained networks.
 """
-#%%
 from utils import goto_project_root
 from utils.path_settings import MODEL_SAVE_PATH, DATA_PATH, LOG_PATH, CONFIG_PATH, OBJECT_PATH
 from torch.utils.tensorboard import SummaryWriter
@@ -64,12 +63,14 @@ def train_from_config_name(network_name, epochs, task_name, re_train, special_na
         configs['training_config']['output_noise'] = noise_strength
         configs['training_config'] = {**configs['training_config'], **additional_config.get('training_config', {})}
         trainer = t.Trainer(configs)
-        if task_name == "0.1q":
+        if task_name in ["0.1q", "0.1q+", "0.1q_rand", "0.1m"]: #take 0.1q as 0.1q_double
             generator = p.PretrainGenerator(configs['training_config'])
+        elif task_name == "0.1c": 
+            generator = r.RendererGenerator(configs['training_config'])
         elif task_name == "1.1":
             generator = r.RendererGenerator(configs['training_config'])
 
-        config_name = f"\\{network_name}_{task_name}_unlimited_configs.json" if special_names is None else f"\\{network_name}_{task_name}_{special_names}_unlimited_configs.json"
+        config_name = f"/{network_name}_{task_name}_unlimited_configs.json" if special_names is None else f"/{network_name}_{task_name}_{special_names}_unlimited_configs.json"
         with (open(
                 CONFIG_PATH + config_name, "w")) as f:
             json.dump(configs, f, indent=4)
@@ -82,26 +83,28 @@ def train_from_config_name(network_name, epochs, task_name, re_train, special_na
             print(f"Training split {i + 1}")
             if i:
                 trainer.refresh()
-            sub_log_path = configs["log_path"] + f"\\split_{i + 1}"
-            sub_check_path = configs["check_path"] + f"\\split_{i + 1}"
+            sub_log_path = configs["log_path"] + f"/split_{i + 1}"
+            sub_check_path = configs["check_path"] + f"/split_{i + 1}"
 
             force_remove_dir(sub_log_path)  # Probably redundant but helps to ensure no old logs are kept
             os.makedirs(sub_log_path, exist_ok=True)
             os.makedirs(sub_check_path, exist_ok=True)
             trainer.train_unlimited(generator,
                           epochs=epochs,
-                          save_path=configs["save_path"] + f"\\model_{i + 1}.pth",
+                          save_path=configs["save_path"] + f"/model_{i + 1}.pth",
                           check_path=sub_check_path,
                           log_path=sub_log_path,
-                          early_stop=early_stop)
-            trainer.save_model(configs["save_path"] + f"\\model_{i + 1}.pth", full=1)
+                          early_stop=early_stop, 
+                          weight_regs=additional_config.get('weight_regs', 0),
+                          )
+            trainer.save_model(configs["save_path"] + f"/model_{i + 1}.pth", full=1)
             if trainer.best_val_loss_split < best_split_loss:
                 best_split_loss = trainer.best_val_loss_split
                 best_split = i + 1
         trainer.load_best_model()
         print(
             f"Training {network_name} on task {task_name} complete. Saving best model to {configs['save_path']}; latest checkpoint to {trainer.latest_checkpoint}.")
-        trainer.save_model(configs["save_path"] + f"\\best_model.pth", full=1)
+        trainer.save_model(configs["save_path"] + f"/best_model.pth", full=1)
         print(f"Best split for {network_name} on task {task_name} is {best_split}.")
         return best_split, trainer.latest_checkpoint
 
@@ -128,7 +131,7 @@ def train_from_config_name(network_name, epochs, task_name, re_train, special_na
     dataloaders = get_dataloaders(data, batch_size = configs["training_config"]["mini_batch_size"], k = 5)
     trainer = t.Trainer(configs)
 
-    config_name = f"\\{network_name}_{task_name}_configs.json" if special_names is None else f"\\{network_name}_{task_name}_{special_names}_configs.json"
+    config_name = f"/{network_name}_{task_name}_configs.json" if special_names is None else f"/{network_name}_{task_name}_{special_names}_configs.json"
     with (open(
             CONFIG_PATH + config_name, "w")) as f:
         json.dump(configs, f, indent=4)
@@ -141,8 +144,8 @@ def train_from_config_name(network_name, epochs, task_name, re_train, special_na
         print(f"Training split {i + 1}")
         if i:
             trainer.refresh()
-        sub_log_path = configs["log_path"] + f"\\split_{i + 1}"
-        sub_check_path = configs["check_path"] + f"\\split_{i + 1}"
+        sub_log_path = configs["log_path"] + f"/split_{i + 1}"
+        sub_check_path = configs["check_path"] + f"/split_{i + 1}"
 
         force_remove_dir(sub_log_path) # Probably redundant but helps to ensure no old logs are kept
         os.makedirs(sub_log_path, exist_ok = True)
@@ -150,58 +153,69 @@ def train_from_config_name(network_name, epochs, task_name, re_train, special_na
         trainer.train(train_loader,
                           val_loader,
                           epochs=epochs,
-                          save_path = configs["save_path"] + f"\\model_{i+1}.pth",
+                          save_path = configs["save_path"] + f"/model_{i+1}.pth",
                           check_path= sub_check_path,
                           log_path = sub_log_path,
-                          early_stop=early_stop)
-        trainer.save_model(configs["save_path"] + f"\\model_{i+1}.pth", full=1)
+                          early_stop=early_stop,
+                          reset_interval=500)
+        trainer.save_model(configs["save_path"] + f"/model_{i+1}.pth", full=1)
         if trainer.best_val_loss_split < best_split_loss:
             best_split_loss = trainer.best_val_loss_split
             best_split = i + 1
     trainer.load_best_model()
     print(f"Training {network_name} on task {task_name} complete. Saving best model to {configs['save_path']}; latest checkpoint to {trainer.latest_checkpoint}.")
-    trainer.save_model(configs["save_path"] + f"\\best_model.pth", full=1)
+    trainer.save_model(configs["save_path"] + f"/best_model.pth", full=1)
     print(f"Best split for {network_name} on task {task_name} is {best_split}.")
     return best_split, trainer.latest_checkpoint
 
 
 def build_config(network_name, task_name, re_train, retrieve_config = False, special_names = None):
     # The last argument is for retrieving the config if it already exists
-    pretraining_networks = [
-        "GRU_1layer_8hidden",
-        "RNN_1layer_8hidden",
-        "GRU_1layer_16hidden",
-        "RNN_1layer_16hidden",
-        "GRU_1layer_32hidden",
-        "RNN_1layer_32hidden",
-        "GRU_2layer_8hidden",
-        "RNN_2layer_8hidden",
-        "FC_16_GRU_1layer_8hidden",
-        "FC_16_RNN_1layer_8hidden",
-        "FC_32_GRU_1layer_8hidden",
-        "FC_32_RNN_1layer_8hidden",
-        "FC_16_GRU_1layer_16hidden",
-        "FC_16_RNN_1layer_16hidden",
-        "FC_32_GRU_1layer_16hidden",
-        "FC_32_RNN_1layer_16hidden",
-        "FC_16_GRU_1layer_32hidden",
-        "FC_16_RNN_1layer_32hidden",
-        "FC_32_GRU_1layer_32hidden",
-        "FC_32_RNN_1layer_32hidden",
-    ]  # This is incomplete. The plan is to investigate across these and implement silence-phase activity
+    # pretraining_networks = [
+    #     "GRU_1layer_8hidden",
+    #     "RNN_1layer_8hidden",
+    #     "GRU_1layer_16hidden",
+    #     "RNN_1layer_16hidden",
+    #     "GRU_1layer_32hidden",
+    #     "RNN_1layer_32hidden",
+    #     "GRU_2layer_8hidden",
+    #     "RNN_2layer_8hidden",
+    #     "FC_16_GRU_1layer_8hidden",
+    #     "FC_16_RNN_1layer_8hidden",
+    #     "FC_32_GRU_1layer_8hidden",
+    #     "FC_32_RNN_1layer_8hidden",
+    #     "FC_16_GRU_1layer_16hidden",
+    #     "FC_16_RNN_1layer_16hidden",
+    #     "FC_32_GRU_1layer_16hidden",
+    #     "FC_32_RNN_1layer_16hidden",
+    #     "FC_16_GRU_1layer_32hidden",
+    #     "FC_16_RNN_1layer_32hidden",
+    #     "FC_32_GRU_1layer_32hidden",
+    #     "FC_32_RNN_1layer_32hidden",
+    #     "FC_16_GRU_2layer_8hidden",
+    #     "FC_16_RNN_2layer_8hidden",
+    #     "FC_32_GRU_2layer_8hidden",
+    #     "FC_32_RNN_2layer_8hidden",
+    #     "FC_16_GRU_2layer_16hidden",
+    #     "FC_16_RNN_2layer_16hidden",
+    #     "FC_32_GRU_2layer_16hidden",
+    #     "FC_32_RNN_2layer_16hidden",
+    #     "FC_16_GRU_2layer_32hidden",
+    #     "FC_16_RNN_2layer_32hidden",
+    #     "FC_32_GRU_2layer_32hidden",
+ 
+    # ]  # This is incomplete. The plan is to investigate across these and implement silence-phase activity
     # suppression on the best performing networks to investigate effects on training.
     # Then can investigate effects of overall regularisation.
     cnn_networks = [
         "CNN_FC_16_GRU_1layer_8hidden",
     ]
-    pretraining_tasks = ["0.1q", "0.2q"]
-    cnn_tasks = ['1.1']
     network_name_short = network_name[:-len("_silence_suppressed")] if network_name.endswith("silence_suppressed") else network_name
 
-    assert ((network_name_short in pretraining_networks and task_name in pretraining_tasks)
-            or (
-                        network_name_short not in pretraining_networks and task_name not in pretraining_tasks)), \
-        "Invalid network-task combination"
+    # assert ((network_name_short in pretraining_networks and task_name in pretraining_tasks)
+    #         or (
+    #                     network_name_short not in pretraining_networks and task_name not in pretraining_tasks)), \
+    #     "Invalid network-task combination"
 
     if network_name_short in cnn_networks:
         return build_config_cnn(network_name, task_name, re_train, retrieve_config, special_names)
@@ -211,7 +225,7 @@ def build_config(network_name, task_name, re_train, retrieve_config = False, spe
         "model_name": None,  # to be added (CustomRNN or FC_RNN)
         "model_path": "Network_models.RNN_models",
         "model_params": {
-            "input_size": 8,
+            "input_size": 4 if (task_name[-1] not in ["m", "c"]) else (9 if task_name[-1] != "c" else (16 if task_name[-2] == 2 else 24)),
             "hidden_size": 8, # to be changed
             "num_layers": 1, # to be changed
             "output_size": 3,
@@ -223,23 +237,27 @@ def build_config(network_name, task_name, re_train, retrieve_config = False, spe
         "optimizer_params": {
             "lr": 0.01
         }
-    }, "distance_loss": "geodesic_gradual", "gradual_loss_weighting": "constant+linear", "regularisation_loss": "L2",
+    }, "distance_loss": "geodesic_gradual", "gradual_loss_weighting": "constant+linear", "regularisation_loss": "L2+exp",
         "distance_weight": 1, "output_regs_weight": 5, "silence_activity": False,
         # silence_activity is the knob for suppressing activity in the silence phase
         "training_config": {
             "task_id": "0.2q",
-            "batch_size": 128,
-            "mini_batch_size": 32,
+            "batch_size": 2048,
+            "mini_batch_size": 128,
             "seq_len": seq_len,
             "prep_phase": prep_phase,
-        }, 'save_path': MODEL_SAVE_PATH + f"\\{network_name}_{task_name}_model", 'log_path': LOG_PATH,
-        'check_path': MODEL_SAVE_PATH + f"\\{network_name}_model_checkpoints"}
-    base_config['training_config']['data_save_path'] = DATA_PATH + f"\\Data_{task_name}.pth"
+        }, 'save_path': MODEL_SAVE_PATH + f"/{network_name}_{task_name}_model", 'log_path': LOG_PATH,
+        'check_path': MODEL_SAVE_PATH + f"/{network_name}_model_checkpoints"}
+    base_config['training_config']['data_save_path'] = DATA_PATH + f"/Data_{task_name}.pth"
+    if task_name == "0.1c": 
+        base_config["training_config"]["object_path"] = OBJECT_PATH + f"/cube_mesh/cube_mesh_full.pth"
+    elif task_name == "0.2c": 
+        base_config['training_config']['object_path'] = OBJECT_PATH + f"/cube_mesh/cube_mesh_camera_simple.pth"
 
     if base_config['distance_loss'][-7:] == "gradual":
-        base_config['save_path'] = MODEL_SAVE_PATH + f"\\{network_name}_{task_name}_model_gradual"
-        base_config['check_path'] = MODEL_SAVE_PATH + f"\\{network_name}_model_checkpoints_gradual"
-        base_config['log_path'] = LOG_PATH + f"\\{network_name}_{task_name}_model_gradual"
+        base_config['save_path'] = MODEL_SAVE_PATH + f"/{network_name}_{task_name}_model_gradual"
+        base_config['check_path'] = MODEL_SAVE_PATH + f"/{network_name}_model_checkpoints_gradual"
+        base_config['log_path'] = LOG_PATH + f"/{network_name}_{task_name}_model_gradual"
         base_config['model_specs']['model_params']['stepwise'] = True
     else:
         base_config['model_specs']['model_params']['stepwise'] = False
@@ -268,125 +286,30 @@ def build_config(network_name, task_name, re_train, retrieve_config = False, spe
 
     network_name = network_name[:-len("_silence_suppressed")] if network_name.endswith("silence_suppressed") else network_name
 
-    match network_name:
-        case "GRU_1layer_8hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-        case "RNN_1layer_8hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-        case "GRU_1layer_16hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 16
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-        case "RNN_1layer_16hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 16
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-        case "GRU_1layer_32hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 32
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-        case "RNN_1layer_32hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 32
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-        case "GRU_2layer_8hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 2
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-        case "RNN_2layer_8hidden":
-            base_config["model_specs"]["model_name"] = "CustomRNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 2
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-        case "FC_16_GRU_1layer_8hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 16
-        case "FC_16_RNN_1layer_8hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 16
-        case "FC_32_GRU_1layer_8hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 32
-        case "FC_32_RNN_1layer_8hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 8
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 32
-        case "FC_16_GRU_1layer_16hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 16
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 16
-        case "FC_16_RNN_1layer_16hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 16
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 16
-        case "FC_32_GRU_1layer_16hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 16
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 32
-        case "FC_32_RNN_1layer_16hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 16
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 32
-        case "FC_16_GRU_1layer_32hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 32
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 16
-        case "FC_16_RNN_1layer_32hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 32
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 16
-        case "FC_32_GRU_1layer_32hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 32
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "GRU"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 32
-        case "FC_32_RNN_1layer_32hidden":
-            base_config["model_specs"]["model_name"] = "FC_RNN"
-            base_config["model_specs"]["model_params"]["hidden_size"] = 32
-            base_config["model_specs"]["model_params"]["num_layers"] = 1
-            base_config["model_specs"]["model_params"]["cell_type"] = "RNN"
-            base_config["model_specs"]["model_params"]["FC_dim"] = 32
-        case _:
-            raise ValueError(f"Unknown network_name: {network_name}")
+    if network_name[:2] == "FC": 
+        base_config["model_specs"]["model_name"] = "FC_RNN"
+        params = network_name.split("_") 
+        base_config["model_specs"]["model_params"]["hidden_size"] = int(params[-1][:-6])
+        base_config["model_specs"]["model_params"]["num_layers"] = int(params[-2][:-5])
+        base_config["model_specs"]["model_params"]["cell_type"] = params[-3]
+        base_config["model_specs"]['model_params']["FC_dim"] = int(params[-4])
+    else: 
+        base_config["model_specs"]["model_name"] = "CustomRNN"
+        params = network_name.split("_") 
+        base_config["model_specs"]["model_params"]["hidden_size"] = int(params[-1][:-6])
+        base_config["model_specs"]["model_params"]["num_layers"] = int(params[-2][:-5])
+        base_config["model_specs"]["model_params"]["cell_type"] = params[-3]
 
+    base_config["training_config"]["task_id"] = task_name 
     if task_name == "0.1q":
-        base_config["training_config"]["task_id"] = "0.1q"
-
+        base_config['training_config']['mode'] = "quaternion_double"
+        base_config["model_specs"]["model_params"]["input_size"] = 8
+    elif task_name == "0.1q+":
+        base_config['training_config']['mode'] = "quaternion_+"
+    elif task_name == "0.1q_rand":
+        base_config['training_config']['mode'] = "quaternion"
+    elif task_name == "0.1m":
+        base_config['training_config']['mode'] = "matrix"
     return base_config
 
 def build_config_cnn(network_name, task_name, re_train, retrieve_config = False, special_names = None):
@@ -429,11 +352,11 @@ def build_config_cnn(network_name, task_name, re_train, retrieve_config = False,
 
 
     base_config['training_config']["task_id"] = task_name
-    base_config['training_config']['data_save_path'] = DATA_PATH + f"\\Data_{task_name}.pth"
-    base_config['training_config']['object_path'] = OBJECT_PATH + "\\cow_mesh\\cow.obj"
-    base_config['save_path'] = MODEL_SAVE_PATH + f"\\{network_name}_{task_name}_model"
-    base_config['log_path'] = LOG_PATH + f"\\{network_name}_{task_name}_model"
-    base_config['check_path'] = MODEL_SAVE_PATH + f"\\{network_name}_model_checkpoints"
+    base_config['training_config']['data_save_path'] = DATA_PATH + f"/Data_{task_name}.pth"
+    base_config['training_config']['object_path'] = OBJECT_PATH + "/cow_mesh/cow.obj"
+    base_config['save_path'] = MODEL_SAVE_PATH + f"/{network_name}_{task_name}_model"
+    base_config['log_path'] = LOG_PATH + f"/{network_name}_{task_name}_model"
+    base_config['check_path'] = MODEL_SAVE_PATH + f"/{network_name}_model_checkpoints"
     for path in [base_config['save_path'], base_config['log_path'], base_config['check_path']]:
         if not os.path.exists(path):
             os.makedirs(path)
@@ -460,11 +383,11 @@ def build_config_Imported_Module(network_name, task_name, rnn_type, re_train, re
 
 
     base_config['training_config']["task_id"] = task_name
-    base_config['training_config']['data_save_path'] = DATA_PATH + f"\\Data_{task_name}.pth"
-    base_config['training_config']['object_path'] = OBJECT_PATH + "\\cow_mesh\\cow.obj"
-    base_config['save_path'] = MODEL_SAVE_PATH + f"\\{network_name}_{task_name}_model"
-    base_config['log_path'] = LOG_PATH + f"\\{network_name}_{task_name}_model"
-    base_config['check_path'] = MODEL_SAVE_PATH + f"\\{network_name}_model_checkpoints"
+    base_config['training_config']['data_save_path'] = DATA_PATH + f"/Data_{task_name}.pth"
+    base_config['training_config']['object_path'] = OBJECT_PATH + "/cow_mesh/cow.obj"
+    base_config['save_path'] = MODEL_SAVE_PATH + f"/{network_name}_{task_name}_model"
+    base_config['log_path'] = LOG_PATH + f"/{network_name}_{task_name}_model"
+    base_config['check_path'] = MODEL_SAVE_PATH + f"/{network_name}_model_checkpoints"
     for path in [base_config['save_path'], base_config['log_path'], base_config['check_path']]:
         if not os.path.exists(path):
             os.makedirs(path)

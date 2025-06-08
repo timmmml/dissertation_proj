@@ -1,0 +1,13 @@
+\beamer@slide {sec:Motivation}{3}
+\beamer@slide {sub:Controller Setup}{4}
+\beamer@slide {sec:CAN Theory: What is it and what have we learned?}{7}
+\beamer@slide {continuous time system}{7}
+\beamer@slide {discrete time system}{7}
+\beamer@slide {sub:Ring Attractor Theory}{8}
+\beamer@slide {System setup}{8}
+\beamer@slide {sub:Attractor as Optimized Solutions}{15}
+\beamer@slide {sec:My Dissertation Project}{18}
+\beamer@slide {sub:Training Attractors with minimal assumptions}{18}
+\beamer@slide {eq:stability}{18}
+\beamer@slide {eq:network}{21}
+\beamer@slide {sub:Learning motor control with an attractor}{24}

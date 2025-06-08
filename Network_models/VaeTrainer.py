@@ -14,6 +14,9 @@ import Rotations as Rot
 from copy import deepcopy
 from utils import goto_project_root
 from torch.optim import lr_scheduler as LR
+import SimulateDatasets.RandomRenderer as rd
+from importlib import reload
+reload(rd)
 
 def reinitialise_weights(model):
     for layer in model.children():
@@ -104,7 +107,7 @@ class VaeTrainer:
 
             if (e + 1) % save_interval == 0:
                 if check_path is not None:
-                    self.save_checkpoint(check_path + "\\checkpoint" + str(e) + ".pth", e, loss)
+                    self.save_checkpoint(check_path + "/checkpoint" + str(e) + ".pth", e, loss)
                     self.latest_checkpoint = e
 
             if (e + 1) % reset_interval == 0 and e/epochs < 0.75:
@@ -121,6 +124,159 @@ class VaeTrainer:
             if self.validate(val_loader, e, 40000, early_stopping=early_stopping):
                 break
         self.save_model(save_path)
+    
+    # Add a train_unlimited function here. long overdue!
+    def train_unlimited(self, **kwargs):
+        # For DataGenerator, we use the trainer's home data generator
+        data_loader_configs = kwargs.get("data_loader_configs", None)
+        self.data_gen = self.data_generator(
+            custom_configs=data_loader_configs
+        )
+        self.data_gen.save_path = kwargs.get("data_save_path", None)
+        epochs = kwargs.get("epochs", 1000)
+        save_interval = kwargs.get("save_interval", 10)
+        reset_interval = kwargs.get("reset_interval", 200)
+        save_path = kwargs.get("save_path", self.save_path)
+        check_path = kwargs.get("check_path", self.check_path)
+        log_path = kwargs.get("log_path", self.log_path)
+        early_stop = kwargs.get("early_stop", False)
+        verbose = kwargs.get("verbose", True)
+        load_indices = kwargs.get("load_index", {"train": 0, "val": 0})
+        save_indices = kwargs.get("store_index", {"train": 0, "val": 0})
+
+        self.writer = SummaryWriter(log_path)
+        self.epochs_no_improve = 0
+        self.best_val_loss_split = float("inf")
+
+        batch_size = self.config.get("training_config", {}).get("batch_size", 128)
+        mini_batch_size = self.config.get("training_config", {}).get(
+            "mini_batch_size", 32
+        )
+        self.data_gen.mini_batch_size = mini_batch_size
+        self.data_gen.load_index = load_indices
+        self.data_gen.store_index = save_indices
+        val_size = round(
+            self.config.get("training_config", {}).get("val_ratio", 0.1) * batch_size
+        )
+        replacement_baseline = self.config.get("training_config", {}).get(
+            "replacement_baseline", 0
+        )
+        replacement_tolerance = self.config.get("training_config", {}).get(
+            "replacement_tolerance", 0.5
+        )
+        epochs_to_calculate = self.config.get("training_config", {}).get(
+            "epochs_to_calculate", 5
+        )
+        refractory_period = epochs_to_calculate * 0.7
+        last_resampling = 0
+        train_loss_store = torch.tensor([], device=self.device)
+        val_loss_store = torch.tensor([], device=self.device)
+        temp = torch.arange(
+            epochs_to_calculate, device=self.device, dtype=torch.get_default_dtype()
+        )
+        temp_mean = temp.mean()
+        temp = temp - temp_mean
+        temp_SS = temp.norm(p=2) ** 2
+        temp = temp / temp_SS
+        train_loss = 0
+        val_loss = 0
+
+        for e in range(epochs):
+            self.model.train()
+            if e == 0:
+                train_loader, val_loader = self.data_gen.generate(
+                    n_samples=batch_size, val_size=val_size, record=True
+                )
+
+            elif e - last_resampling > epochs_to_calculate + refractory_period:
+                train_loss_store = torch.cat(
+                    (train_loss_store, torch.tensor([train_loss], device=self.device))
+                )[-epochs_to_calculate:]
+                val_loss_store = torch.cat(
+                    (val_loss_store, torch.tensor([val_loss], device=self.device))
+                )[-epochs_to_calculate:]
+                # print(f"Train loss slope: {train_loss_store}")
+                # print(f"Val loss slope: {val_loss_store}")
+                train_loss_slope = temp @ (train_loss_store - train_loss_store.mean())
+                val_loss_slope = temp @ (val_loss_store - val_loss_store.mean())
+                replacement_rate = self.compute_replacement_rate(
+                    train_loss_slope,
+                    val_loss_slope,
+                    baseline=replacement_baseline,
+                    tolerance=replacement_tolerance,
+                )
+                if replacement_rate > 0:
+                    train_loader, val_loader = self.data_gen.replace(
+                        replacement_rate * 1.0
+                    )  # Replace a proportion of the training set
+                    self.train_loader = train_loader
+                    self.val_loader = val_loader
+                    last_resampling = e
+                    train_loss_store = torch.tensor([], device=self.device)
+                    val_loss_store = torch.tensor([], device=self.device)
+            else:
+                train_loss_store = torch.cat(
+                    (train_loss_store, torch.tensor([train_loss], device=self.device))
+                )
+                val_loss_store = torch.cat(
+                    (val_loss_store, torch.tensor([val_loss], device=self.device))
+                )
+
+            train_loss = 0
+            for i, data in enumerate(train_loader):
+                # Let's only use images here.
+                data = data.to(self.device)
+                self.optimizer.zero_grad()
+                x_hat, mu, log_var = self.model(data)
+
+                loss = self.loss_fn(
+                    data, x_hat, mu, log_var, e, 40000
+                )
+                loss = loss.mean()
+                loss.backward()
+                self.optimizer.step()
+                self.writer.add_scalar("training loss", loss, i + e * len(train_loader))
+
+                # Log additional loss components
+                self.writer.add_scalar("training reconstruction loss", self.loss_fn.current_reconstruction_loss, i + e * len(train_loader))
+                self.writer.add_scalar("training KL divergence loss", self.loss_fn.current_kl_divergence_loss, i + e * len(train_loader))
+                train_loss += loss
+
+            train_loss /= len(train_loader)
+
+            if (e + 1) % save_interval == 0:
+                if check_path is not None:
+                    self.save_checkpoint(
+                        check_path + "/checkpoint" + str(e) + ".pth", e, loss
+                    )
+                    self.latest_checkpoint = e
+
+            if (e + 1) % reset_interval == 0 and e / epochs < 0.75:
+                if self.scheduler is not None:
+                    self.scheduler = LR.ReduceLROnPlateau(
+                        self.optimizer,
+                        mode="min",
+                        factor=0.1,
+                        patience=100,
+                        min_lr=5e-4,
+                        cooldown=50,
+                    )
+                    for param_group in self.optimizer.param_groups:
+                        param_group["lr"] = self.lr_init
+                self.epochs_no_improve = 0
+
+            if self.scheduler is None:
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = self.lr_init
+
+            if self.validate(val_loader, e, 40000, early_stop):
+                break
+            val_loss = self.val_loss
+            if verbose:
+                print(
+                    f"Epoch {e}, training loss: {train_loss}, validation loss: {val_loss}"
+                )
+        self.save_model(save_path)
 
     def validate(self, val_loader, epoch, epochs = 0, early_stopping = False):
         self.model.eval()
@@ -128,7 +284,7 @@ class VaeTrainer:
         val_reconstruction_loss = 0
         val_kl_loss = 0
         with torch.no_grad():
-            for i, (data, labels) in enumerate(val_loader):
+            for i, data in enumerate(val_loader):
                 data += torch.randn_like(data) * 0.01
                 # print(data.shape)
                 # data.permute(0,3,1,2)
@@ -160,12 +316,27 @@ class VaeTrainer:
                 self.epochs_no_improve += 1
                 if self.epochs_no_improve >= 100:
                     print("Early stopping")
+                    self.val_loss = avg_val_loss
                     return(1)
             if avg_val_loss < self.best_val_loss:
                 self.best_val_loss = avg_val_loss
                 self.best_model = deepcopy(self.model.state_dict())
-                self.save_checkpoint(self.check_path + "\\best_model.pth", epoch, avg_val_loss)
+                self.save_checkpoint(self.check_path + "/best_model.pth", epoch, avg_val_loss)
+            self.val_loss = avg_val_loss
             return(0)
+
+    def compute_replacement_rate(
+        self, train_loss_slope, val_loss_slope, baseline=0, tolerance=0.5
+    ):
+        ratio = val_loss_slope / train_loss_slope
+        replacement_rate = (
+            min(1, max(baseline, 1 - ratio))
+            if val_loss_slope > train_loss_slope and ratio < tolerance
+            else 0
+        )
+        return replacement_rate
+
+
 
     def save_checkpoint(self, path, e, loss):
         torch.save(
@@ -208,6 +379,11 @@ class VaeTrainer:
             x_hat, mu, log_var = self.model(features)
             loss = self.loss_fn(features, x_hat, mu, log_var)
         return x_hat, loss
+    
+    def data_generator(self, custom_configs=None):
+        return rd.RandomRenderer(
+            self.config if custom_configs is None else custom_configs,
+        )
 
     def _model_type(self, model_specs):
         model_name = model_specs["model_name"]
@@ -255,6 +431,10 @@ class VaeTrainer:
                 return nn.KLDivLoss(reduction="batchmean")
             case "KL_sum":
                 return nn.KLDivLoss(reduction="sum")
+            case "NO_KL":
+                return lambda mean, log_var: torch.tensor(0, device = "cuda")
+            case _:
+                raise NotImplementedError
 
 class ELBO(nn.Module):
     """Custom ELBO; takes a reconstruction loss and a KL divergence loss"""
@@ -286,3 +466,4 @@ class Annealing_functions:
                 self.function = lambda e, E: 1e-3 + e/E
             case "exp":
                 self.function = lambda e, E: 1e-3 + torch.exp(torch.tensor(e - E, device = "cuda"))
+

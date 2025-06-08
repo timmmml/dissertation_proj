@@ -29,7 +29,7 @@ class RotationVAE(nn.Module):
     def __init__(self, config):
         super(RotationVAE, self).__init__()
         print("trying to initialise VAE")
-        self.device = "cpu"
+        self.device = "cuda"
         self.config = config
         self.encoder = self.set_up_encoder(config.get('encoder', 'simple'))  # Args can be "pretrained"
         self.decoder = self.set_up_decoder(
@@ -95,7 +95,7 @@ class SimpleEncoder(nn.Module):
         self.input_resolution = config.get('input_resolution', config.get('resolution', 64))
         self.latent_dimension = config.get('latent_dimension', 16)
         self.graph = nn.Sequential(
-            nn.Conv2d(3, 32, 3, 2, 1),
+            nn.Conv2d(1, 32, 3, 2, 1),
             nn.ReLU(),
             # nn.MaxPool2d(2, 2),
             nn.Conv2d(32, 16, 3, 2, 1),
@@ -104,6 +104,13 @@ class SimpleEncoder(nn.Module):
             nn.Flatten(),
             nn.Linear(self.input_resolution * self.input_resolution, self.latent_dimension * 2)
         )
+        # self.graph = nn.Sequential(
+        #     nn.Conv2d(1, 64, 3, 1, 0), # 62 x 62
+        #     nn.ReLU(), 
+        #     nn.Conv2d(64, 32, 3, 2), # 31 x 31
+        #     nn.Flatten(), 
+        #     nn.Linear(28800, self.latent_dimension * 2)
+        # )
         self.FC_mean = nn.Linear(self.latent_dimension*2, self.latent_dimension)
         self.FC_log_var = nn.Linear(self.latent_dimension*2, self.latent_dimension)
         # self.FC_sigma = nn.Sequential(
@@ -157,8 +164,8 @@ class FCDecoder(nn.Module):
         self.latent_dimension = config.get('latent_dimension', 16)
         self.output_resolution = config.get('output_resolution', config.get('resolution', 64))
         self.graph = nn.Sequential(
-            nn.Linear(self.latent_dimension, self.output_resolution * self.output_resolution * 3),
-            nn.Unflatten(1, (3, self.output_resolution, self.output_resolution)),
+            nn.Linear(self.latent_dimension, self.output_resolution * self.output_resolution),
+            nn.Unflatten(1, (1, self.output_resolution, self.output_resolution)),
             # nn.ConvTranspose2d(8, 3, 4, 2, 1),
             nn.Sigmoid()
         )

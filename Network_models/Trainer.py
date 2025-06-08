@@ -96,7 +96,7 @@ class Trainer:
         self.model.to(self.device)
 
     def train(
-        self, train_loader, val_loader, epochs=10, save_interval=10, reset_interval = 200, save_path=None, check_path=None, log_path=None, early_stop = False):
+        self, train_loader, val_loader, epochs=10, save_interval=10, reset_interval = 200, save_path=None, check_path=None, log_path=None, early_stop = False, weight_regs = 0):
 
         if save_path is None:
             save_path = self.save_path
@@ -132,7 +132,7 @@ class Trainer:
 
             if (e + 1) % save_interval == 0:
                 if check_path is not None:
-                    self.save_checkpoint(check_path + "\\checkpoint" + str(e) + ".pth", e, loss)
+                    self.save_checkpoint(check_path + "/checkpoint" + str(e) + ".pth", e, loss)
                     self.latest_checkpoint = e
 
             if (e + 1) % reset_interval == 0 and e/epochs < 0.75:
@@ -150,7 +150,7 @@ class Trainer:
                 break
         self.save_model(save_path)
 
-    def train_unlimited(self, data_generator, epochs = 10, save_interval=10, reset_interval = 500, save_path=None, check_path=None, log_path=None, early_stop = False):
+    def train_unlimited(self, data_generator, epochs = 10, save_interval=10, reset_interval = 500, save_path=None, check_path=None, log_path=None, early_stop = False, weight_regs = 0):
         """Same as the Train function, except that in this case we have unlimited data.
         train_loader and val_loader will no longer be provided; instead, there is a data generator we can use every epoch.
 
@@ -219,6 +219,10 @@ class Trainer:
                 output = self.model(data)
                 loss = self.loss_fn(output, self.model.pred, target)
                 loss = loss.mean()
+                l1_reg = torch.tensor(0., requires_grad=True)
+                for param in self.model.parameters():
+                    l1_reg = l1_reg + torch.norm(param, 1) 
+                loss = loss + weight_regs * l1_reg
                 loss.backward()
                 self.optimizer.step()
                 self.writer.add_scalar("training loss", loss.item(), i + e * len(train_loader))
@@ -237,7 +241,7 @@ class Trainer:
 
             if (e + 1) % save_interval == 0:
                 if check_path is not None:
-                    self.save_checkpoint(check_path + "\\checkpoint" + str(e) + ".pth", e, loss)
+                    self.save_checkpoint(check_path + "/checkpoint" + str(e) + ".pth", e, loss)
                     self.latest_checkpoint = e
 
             if (e + 1) % reset_interval == 0 and e/epochs < 0.75:
@@ -312,7 +316,7 @@ class Trainer:
             if avg_val_loss < self.best_val_loss:
                 self.best_val_loss = avg_val_loss
                 self.best_model = deepcopy(self.model.state_dict())
-                self.save_checkpoint(self.check_path + "\\best_model.pth", epoch, avg_val_loss)
+                self.save_checkpoint(self.check_path + "/best_model.pth", epoch, avg_val_loss)
             return(0)
 
     def save_checkpoint(self, path, e, loss):
@@ -401,6 +405,8 @@ class Trainer:
         match loss_name:
             case "L2":
                 return L2Regularisation()
+            case "L2+exp": 
+                return ExpL2Regularisation()
             case "L1":
                 return NotImplementedError
             case "Elastic":
@@ -478,6 +484,14 @@ class L2Regularisation(RegularisationLoss):
         loss = torch.norm(output, p=2, dim = -1).sum(dim=-1)
         return loss
 
+class ExpL2Regularisation(RegularisationLoss): 
+    """Implements the exp + L2 loss"""
+    def __init__(self): 
+        super(ExpL2Regularisation, self).__init__()
+
+    def forward(self, output): 
+        loss = torch.exp(torch.norm(output, p = 2, dim = -1)).sum(dim = -1)
+        return loss
 class DistanceLoss(nn.Module):
     """Implements a head handler for distance loss functions"""
 

@@ -25,18 +25,20 @@
     "gradual_loss_weighting": "constant+linear",
     "regularisation_loss": "L2",
     "distance_weight": 1,
-    "output_regs_weight": 5,
+    "output_regs_weight": 1,
     "silence_activity": false,
     "training_config": {
         "task_id": "0.1q",
-        "batch_size": 128,
-        "mini_batch_size": 32,
+        "batch_size": 2048,
+        "mini_batch_size": 128,
         "seq_len": 100,
         "prep_phase": 50,
-        "data_save_path": "D:\\Projects\\mental-rotations\\data\\Data_0.1q.pth",
-        "output_noise": 0.01
+        "data_save_path": "/home/timmy/nonnormal/dummy/mental-rotations/training_data/Data_0.1q.pth",
+        "mode": "quaternion_double",
+        "output_noise": 0.0,
+        "epochs_to_calculate": 30
     },
-    "save_path": "D:\\Projects\\mental-rotations\\models\\FC_16_GRU_1layer_8hidden_0.1q_model_gradual_constant_rework_output_noise",
-    "log_path": "D:\\Projects\\mental-rotations\\logs\\FC_16_GRU_1layer_8hidden_0.1q_model_gradual_constant_rework_output_noise",
-    "check_path": "D:\\Projects\\mental-rotations\\models\\FC_16_GRU_1layer_8hidden_model_checkpoints_gradual_constant_rework_output_noise"
+    "save_path": "/home/timmy/nonnormal/dummy/mental-rotations/saved_models/FC_16_GRU_1layer_8hidden_0.1q_model_gradual_constant_rework_output_noise",
+    "log_path": "/home/timmy/nonnormal/dummy/mental-rotations/logs/FC_16_GRU_1layer_8hidden_0.1q_model_gradual_constant_rework_output_noise",
+    "check_path": "/home/timmy/nonnormal/dummy/mental-rotations/saved_models/FC_16_GRU_1layer_8hidden_model_checkpoints_gradual_constant_rework_output_noise"
 }

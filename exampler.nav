@@ -1,0 +1,86 @@
+\headcommand {\slideentry {0}{0}{1}{1/1}{}{0}}
+\headcommand {\beamer@framepages {1}{1}}
+\headcommand {\beamer@sectionpages {1}{1}}
+\headcommand {\beamer@subsectionpages {1}{1}}
+\headcommand {\sectionentry {1}{Motivation}{2}{Motivation}{0}}
+\headcommand {\slideentry {1}{0}{1}{2/2}{}{0}}
+\headcommand {\beamer@framepages {2}{2}}
+\headcommand {\slideentry {1}{0}{2}{3/3}{}{0}}
+\headcommand {\beamer@framepages {3}{3}}
+\headcommand {\beamer@subsectionpages {2}{3}}
+\headcommand {\beamer@subsectionentry {0}{1}{1}{4}{Controller Setup}}
+\headcommand {\slideentry {1}{1}{1}{4/4}{Controller Setup}{0}}
+\headcommand {\beamer@framepages {4}{4}}
+\headcommand {\slideentry {1}{1}{2}{5/5}{Controller Setup}{0}}
+\headcommand {\beamer@framepages {5}{5}}
+\headcommand {\beamer@sectionpages {2}{5}}
+\headcommand {\beamer@subsectionpages {4}{5}}
+\headcommand {\sectionentry {2}{CAN Theory: What is it and what have we learned?}{6}{CAN Theory: What is it and what have we learned?}{0}}
+\headcommand {\slideentry {2}{0}{1}{6/6}{}{0}}
+\headcommand {\beamer@framepages {6}{6}}
+\headcommand {\slideentry {2}{0}{2}{7/7}{}{0}}
+\headcommand {\beamer@framepages {7}{7}}
+\headcommand {\beamer@subsectionpages {6}{7}}
+\headcommand {\beamer@subsectionentry {0}{2}{1}{8}{Ring Attractor Theory}}
+\headcommand {\slideentry {2}{1}{1}{8/8}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {8}{8}}
+\headcommand {\slideentry {2}{1}{2}{9/9}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {9}{9}}
+\headcommand {\slideentry {2}{1}{3}{10/10}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {10}{10}}
+\headcommand {\slideentry {2}{1}{4}{11/11}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {11}{11}}
+\headcommand {\slideentry {2}{1}{5}{12/12}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {12}{12}}
+\headcommand {\slideentry {2}{1}{6}{13/13}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {13}{13}}
+\headcommand {\slideentry {2}{1}{7}{14/14}{Ring Attractor Theory}{0}}
+\headcommand {\beamer@framepages {14}{14}}
+\headcommand {\beamer@subsectionpages {8}{14}}
+\headcommand {\beamer@subsectionentry {0}{2}{2}{15}{Attractor Network as Optimized Solutions}}
+\headcommand {\slideentry {2}{2}{1}{15/15}{Attractor Network as Optimized Solutions}{0}}
+\headcommand {\beamer@framepages {15}{15}}
+\headcommand {\slideentry {2}{2}{2}{16/16}{Attractor Network as Optimized Solutions}{0}}
+\headcommand {\beamer@framepages {16}{16}}
+\headcommand {\beamer@sectionpages {6}{16}}
+\headcommand {\beamer@subsectionpages {15}{16}}
+\headcommand {\sectionentry {3}{My Dissertation Project}{17}{My Dissertation Project}{0}}
+\headcommand {\slideentry {3}{0}{1}{17/17}{}{0}}
+\headcommand {\beamer@framepages {17}{17}}
+\headcommand {\beamer@subsectionpages {17}{17}}
+\headcommand {\beamer@subsectionentry {0}{3}{1}{18}{Training Attractors with minimal assumptions}}
+\headcommand {\slideentry {3}{1}{1}{18/18}{Training Attractors with minimal assumptions}{0}}
+\headcommand {\beamer@framepages {18}{18}}
+\headcommand {\slideentry {3}{1}{2}{19/19}{Training Attractors with minimal assumptions}{0}}
+\headcommand {\beamer@framepages {19}{19}}
+\headcommand {\slideentry {3}{1}{3}{20/20}{Training Attractors with minimal assumptions}{0}}
+\headcommand {\beamer@framepages {20}{20}}
+\headcommand {\slideentry {3}{1}{4}{21/21}{Training Attractors with minimal assumptions}{0}}
+\headcommand {\beamer@framepages {21}{21}}
+\headcommand {\slideentry {3}{1}{5}{22/22}{Training Attractors with minimal assumptions}{0}}
+\headcommand {\beamer@framepages {22}{22}}
+\headcommand {\slideentry {3}{1}{6}{23/23}{Training Attractors with minimal assumptions}{0}}
+\headcommand {\beamer@framepages {23}{23}}
+\headcommand {\beamer@subsectionpages {18}{23}}
+\headcommand {\beamer@subsectionentry {0}{3}{2}{24}{Learning motor control with an attractor}}
+\headcommand {\slideentry {3}{2}{1}{24/24}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {24}{24}}
+\headcommand {\slideentry {3}{2}{2}{25/25}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {25}{25}}
+\headcommand {\slideentry {3}{2}{3}{26/26}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {26}{26}}
+\headcommand {\slideentry {3}{2}{4}{27/27}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {27}{27}}
+\headcommand {\slideentry {3}{2}{5}{28/28}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {28}{28}}
+\headcommand {\slideentry {3}{2}{6}{29/29}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {29}{29}}
+\headcommand {\slideentry {3}{2}{7}{30/30}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {30}{30}}
+\headcommand {\slideentry {3}{2}{8}{31/31}{Learning motor control with an attractor}{0}}
+\headcommand {\beamer@framepages {31}{31}}
+\headcommand {\beamer@partpages {1}{31}}
+\headcommand {\beamer@subsectionpages {24}{31}}
+\headcommand {\beamer@sectionpages {17}{31}}
+\headcommand {\beamer@documentpages {31}}
+\headcommand {\gdef \inserttotalframenumber {31}}

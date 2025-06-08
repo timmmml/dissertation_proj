@@ -8,6 +8,8 @@ from .BaseNNAgent import BaseNNAgent
 import Rotations as Rot
 from numba import jit
 from pytorch3d import transforms
+from scipy.spatial.transform import Rotation as R
+from utils.path_settings import OBJECT_PATH
 
 class CustomRNN(BaseNNAgent):
     """The CustomRNN model - a canonical RNN graph that accepts a cell-type argument.
@@ -74,21 +76,47 @@ class CustomRNN(BaseNNAgent):
     # def predict_pytorch3d(self):
     #     pass
 
+    # def rotate(self, q_in):
+    #     silence_period = self.total_period - self.action_period
+    #     if q_in[0] < 0:
+    #         q_in = -q_in
+    #     q_in = torch.cat((q_in, -q_in), dim=0)
+    #     q_in = q_in.unsqueeze(0).unsqueeze(0)
+    #     q_in = q_in.repeat(1, silence_period, 1)
+    #     q_in = torch.cat((q_in, torch.zeros(1, self.action_period, 8).to(q_in.device)), dim=1)
+    #     q_in = q_in.to(self.fc_out.bias.device)
+    #     traj = self(q_in)
+    #     # Take the last 500 steps of outputs and make them a list of 500 quaternions by exponential map
+    #     traj = traj[0, -self.action_period:, :].detach()
+    #     traj = Rot.exp_quat(traj * self.dt)
+    #     return traj
+
     def rotate(self, q_in):
         silence_period = self.total_period - self.action_period
+        print(q_in)
         if q_in[0] < 0:
             q_in = -q_in
-        q_in = torch.cat((q_in, -q_in), dim=0)
+        if self.input_size == 8:
+            q_in = torch.cat((q_in, -q_in), dim=0)
+        elif self.input_size == 9: 
+            q_in = torch.tensor(R.from_quat(q_in.cpu().numpy(), scalar_first=True).as_matrix()).float().view(9)
+        elif self.input_size == 24: 
+            mesh = torch.load(OBJECT_PATH + f"/cube_mesh/cube_mesh_full.pth")
+            q_in = mesh.quat2verts(q_in).reshape(24)
+        elif self.input_size == 16:
+            mesh = torch.load(OBJECT_PATH + f"/cube_mesh/cube_mesh_camera_simple.pth")
+            q_in = mesh.quat2verts(q_in).reshape(16)
+        print("rotating")
         q_in = q_in.unsqueeze(0).unsqueeze(0)
         q_in = q_in.repeat(1, silence_period, 1)
-        q_in = torch.cat((q_in, torch.zeros(1, self.action_period, 8).to(q_in.device)), dim=1)
+        q_in = torch.cat((q_in, torch.zeros(1, self.action_period, self.input_size).to(q_in.device)), dim=1)
         q_in = q_in.to(self.fc_out.bias.device)
         traj = self(q_in)
         # Take the last 500 steps of outputs and make them a list of 500 quaternions by exponential map
         traj = traj[0, -self.action_period:, :].detach()
         traj = Rot.exp_quat(traj * self.dt)
+        print("rotation success")
         return traj
-
 
 class FC_RNN(BaseNNAgent):
     """CustomRNN + FC layer in front
@@ -149,15 +177,27 @@ class FC_RNN(BaseNNAgent):
 
     def rotate(self, q_in):
         silence_period = self.total_period - self.action_period
-        if q_in[0] < 0:
-            q_in = -q_in
-        q_in = torch.cat((q_in, -q_in), dim=0)
+        print(q_in)
+        # if q_in[0] < 0:
+        #     q_in = -q_in
+        if self.input_size == 8:
+            q_in = torch.cat((q_in, -q_in), dim=0)
+        elif self.input_size == 9: 
+            q_in = torch.tensor(R.from_quat(q_in.cpu().numpy(), scalar_first=True).as_matrix()).float().view(9)
+        elif self.input_size == 24: 
+            mesh = torch.load(OBJECT_PATH + f"/cube_mesh/cube_mesh_full.pth")
+            q_in = mesh.quat2verts(q_in).reshape(24)
+        elif self.input_size == 16:
+            mesh = torch.load(OBJECT_PATH + f"/cube_mesh/cube_mesh_camera_simple.pth")
+            q_in = mesh.quat2verts(q_in).reshape(16)
+        print("rotating")
         q_in = q_in.unsqueeze(0).unsqueeze(0)
         q_in = q_in.repeat(1, silence_period, 1)
-        q_in = torch.cat((q_in, torch.zeros(1, self.action_period, 8).to(q_in.device)), dim=1)
+        q_in = torch.cat((q_in, torch.zeros(1, self.action_period, self.input_size).to(q_in.device)), dim=1)
         q_in = q_in.to(self.fc_out.bias.device)
         traj = self(q_in)
         # Take the last 500 steps of outputs and make them a list of 500 quaternions by exponential map
         traj = traj[0, -self.action_period:, :].detach()
         traj = Rot.exp_quat(traj * self.dt)
+        print("rotation success")
         return traj

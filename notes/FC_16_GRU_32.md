@@ -1,0 +1,10 @@
+same ordering as in [[FC_16_GRU_16]]
+![[Pasted image 20240925160131.png]]
+![[Pasted image 20240925160135.png]]
+![[Pasted image 20240925160141.png]]
+![[Pasted image 20240925160154.png]]
+![[Pasted image 20240925160206.png]]
+![[Pasted image 20240925160241.png]]
+
+![[Pasted image 20240925160312.png]]
+![[Pasted image 20240925160323.png]]

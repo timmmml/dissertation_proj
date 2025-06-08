@@ -30,23 +30,31 @@ class RendererGenerator(d.DataGenerator):
         super(RendererGenerator, self).__init__(additional_config=configs)
         self.additional_config = configs
         self.output_noise = configs.get("output_noise", 0) # noise to the output, in theta
-        self.object_path = configs.get("object_path", OBJECT_PATH + "\\cow_mesh\\cow.obj")
+        self.object_path = configs.get("object_path", OBJECT_PATH + "/cow_mesh/cow.obj")
         self.resolution = configs.get("resolution", 64)
         self.cam_position = configs.get("cam_position", 2.7)
 
         self.device = "cuda"
-        self.mesh = load_objs_as_meshes([self.object_path], device=self.device)
+        torch.set_default_device("cpu") # to safely load the mesh
+        if self.object_path.endswith(".obj"):
+            self.mesh = load_objs_as_meshes([self.object_path], device=self.device)
+            self.cubemesh = False
+        elif self.object_path.endswith(".pth"):
+            self.mesh = torch.load(self.object_path)
+            self.cubemesh = True
+        else: 
+            raise("Object path must be a .obj or .pth file")
         R, T = look_at_view_transform(self.cam_position, 0, 180)
         self.cameras = FoVPerspectiveCameras(device=self.mesh.device, R=R, T=T)
-        raster_settings = RasterizationSettings(
+        self.raster_settings = RasterizationSettings(
             image_size=self.resolution,
             blur_radius=0.0,
             faces_per_pixel=1,
         )
-        lights = PointLights(device=self.mesh.device, location=[[0.0, 0.0, -3.0]])
+        self.lights = PointLights(device=self.mesh.device, location=[[0.0, 0.0, -3.0]])
         self.renderer = MeshRenderer(
-            rasterizer=MeshRasterizer(cameras=self.cameras, raster_settings=raster_settings),
-            shader=SoftPhongShader(device=self.mesh.device, lights=lights, cameras=self.cameras)
+            rasterizer=MeshRasterizer(cameras=self.cameras, raster_settings=self.raster_settings),
+            shader=SoftPhongShader(device=self.mesh.device, lights=self.lights, cameras=self.cameras)
         )
 
         if isinstance(self.output_noise, tuple):
@@ -73,16 +81,22 @@ class RendererGenerator(d.DataGenerator):
         #     R = quaternion_to_matrix(q.to(self.device))
         #     images = self.renderer(meshes_world=self.mesh, R=R, T=self.cameras.get_camera_center())[0, ..., :3].permute(2, 0, 1)
         #     features[i] = images
-        mesh = self.mesh.clone()
-        meshes = mesh.extend(n_samples)
-        R, T = look_at_view_transform(self.cam_position, 0, 180)
-        self.cameras = FoVPerspectiveCameras(device=self.mesh.device, R=R, T=T)
-        rotated_meshes = meshes.update_padded(quaternion_apply(q_s.to(self.device), mesh.verts_padded()))
-        # R = quaternion_to_matrix(q_s.to(self.device)).squeeze(1)
-        # print(R)
-        # images = self.renderer(meshes_world=meshes, R=R, T=self.cameras.get_camera_center().repeat(n_samples, 1))[..., :3].permute(0, 3, 1, 2)
-        images = self.renderer(rotated_meshes)[..., :3].permute(0, 3, 1, 2)
-        features = images
+        if not self.cubemesh:
+            mesh = self.mesh.clone()
+            meshes = mesh.extend(n_samples)
+            R, T = look_at_view_transform(self.cam_position, 0, 180)
+            self.cameras = FoVPerspectiveCameras(device=self.mesh.device, R=R, T=T)
+            rotated_meshes = meshes.update_padded(quaternion_apply(q_s.to(self.device), mesh.verts_padded()))
+            # R = quaternion_to_matrix(q_s.to(self.device)).squeeze(1)
+            # print(R)
+            # images = self.renderer(meshes_world=meshes, R=R, T=self.cameras.get_camera_center().repeat(n_samples, 1))[..., :3].permute(0, 3, 1, 2)
+            images = self.renderer(rotated_meshes)[..., :3].permute(0, 3, 1, 2)
+            features = images
+        else: 
+            seq_len, prep_phase = self.additional_config["seq_len"], self.additional_config["prep_phase"]
+            features = self.mesh.quat2verts(q_s).repeat(1, prep_phase, 1)
+            features = torch.cat((features, torch.zeros(features.shape[0], seq_len - prep_phase, features.shape[-1]).to(features.device)), dim=-2)
+        # print(features.shape)
         labels = torch.cat((torch.cos(thetas_label/2), torch.sin(thetas_label/2) * axes_label / axes_label.norm(dim = -1).unsqueeze(-1)), dim=-1)
         return(RotationDataset(features, labels.squeeze(1)))
 

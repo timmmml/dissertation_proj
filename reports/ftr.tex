@@ -1,0 +1,187 @@
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Journal Article
+% LaTeX Template
+% Version 2.0 (February 7, 2023)
+%
+% This template originates from:
+% https://www.LaTeXTemplates.com
+%
+% Author:
+% Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+%
+% NOTE: The bibliography needs to be compiled using the biber engine.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[
+	a4paper, % Paper size, use either a4paper or letterpaper
+	11pt, % Default font size, can also use 11pt or 12pt, although this is not recommended
+	unnumberedsections, % Comment to enable section numbering
+	%twoside, % Two side traditional mode where headers and footers change between odd and even pages, comment this option to make them fixed
+]{LTJournalArticle}
+\usepackage{amsmath}
+\addbibresource{3g3.bib}
+\bibliography{3g3.bib}
+\runninghead{3G3 Lab Report} % A shortened article title to appear in the running head, leave this command empty for no running head
+
+\setcounter{page}{1} % The page number of the first page, set this to a higher number if the article is to be part of an issue or larger work
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\title{3G3 new Lab Report\\Coding in Visual Cortex} % Article title, use manual lines breaks (\\) to beautify the layout
+
+% Authors are listed in a comma-separated list with superscript numbers indicating affiliations
+% \thanks{} is used for any text that should be placed in a footnote on the first page, such as the corresponding author's email, journal acceptance dates, a copyright/license notice, keywords, etc
+\author{%
+Tim Lin, Dept. of Engineering, University of Cambridge
+}
+\renewcommand{\maketitlehookd}{%
+	\begin{abstract}
+  \noindent Neurons in mammalian primary sensory areas are suggested to process environmental stimuli in such a way that maximizes information conveyed and minimizes encoding energy. In this synthesizing review, two seminal papers are discussed to form a coherent argument for sparsity as a principle in coding for both vision and audition. After detailing the approaches in the two papers, including problem formalization, optimization, and simulation results, I further discuss potential future investigations following the works. \end{abstract}
+}
+%----------------------------------------------------------------------------------------
+\begin{document}
+
+\maketitle % Output the title section
+%----------------------------------------------------------------------------------------
+%	ARTICLE CONTENTS
+%----------------------------------------------------------------------------------------
+
+\section{Introduction}
+Visual coding is a classic topic in neural coding research. Natural images represents a subspace of the space of all possible retinal photoreceptor activations, and the cortex needs to orient its limited coding resources to optimally code for ecologically relevant information only. In addition to the limited coding resource, cortical representations must be optimized to take low metabolic costs and support smoothness of changes in response to small changes in the environment such as scaling or translation of objects, which do not necessarily map to small changes in retinal images. \\
+
+This set of needs do not only concern vision, but can be generalized to other sensory modalities such as audition and olfaction. The overload of information that can be represented by the dynamic ranges of sensory peripheries (inner ear and olfactory epithelium) undergoes considerable processing to yield efficient and continuous cortical representations.\\
+
+In this Full Technical Report, I examine two seminal papers aimed to translate the set of needs to a set of mathematical constraints underlying the mammalian codes for vision and audition \cite{olshausenSparseCodingOvercomplete1997, smithEfficientAuditoryCoding2006}. The two papers both investigate sparsity as a coding principle in addition to optimality in reconstruction of natural stimuli. Specifically, though dimensionality reduction seem to be an obvious answer to the coding problem (for there is a lower number of effective dimensions in the set of all natural images/sounds than all possible images/sounds), the papers make no dimensionality bottlenecks in their modelling and obtain codebooks qualitatively similar to those observed in biology by the sparsity constraint alone. In this report, I outline the details of the papers' mathematical modelling, optimization (optimal encoding and learning), and simulation results.
+%------------------------------------------------
+
+\section{Modelling}
+\subsection{Model Setup}%
+  \label{sub:Model Setup}
+  
+In both papers, the neural codebook is thought of as a number of basis functions that can be used to reconstruct training inputs. Coding is formulated probabilistically as using this set of basis functions as a generative model to approximate the true distribution of natural stimuli: 
+\begin{center}
+\begin{align}
+  \label{Eq1}
+  P^*(x) \approx P(x|\Phi)  & = \int P(x|\Phi, \Theta)P(\Theta) \, d\Theta  
+\end{align}
+\end{center}
+where $x$ denotes an environmental stimulus - a visual image or an auditory sequence of vibration, and $\Theta$ denotes parameters for the set of basis functions (the model) $\Phi$. A basis function in the model is indexed by $\phi_m$. Each stimulus is encoded in a model as a set of parameters, and goodness of representation is assessed by reconstruction: using $\hat{x}(\mathbf{t}) = f(\Phi, \Theta)$ to approximate $x(\mathbf{t})$ for all signal location $\mathbf{t}$ . The two papers similarly assume the reconstruction to be linear, but the detailed implementations differ. I begin the discussion with the case for vision:
+\begin{center}
+  \begin{align}
+    \Theta &= \begin{bmatrix}
+      s_0 & \dots & s_m & \dots
+    \end{bmatrix}^{\top}\notag\\
+    \mathbf{t} &= \begin{bmatrix}
+      i & j
+    \end{bmatrix}^{\top}\notag\\
+    x(i, j) &= \overset{\hat{x}}{\overline{\sum_m s_m \phi_m(i, j)}} + \epsilon(i, j)\label{Eq2}
+  \end{align}
+\end{center}
+where $s_m$ can be thought of as the activation of the $m^{th}$ basis function $\phi_m$, which is evaluated on a set of spatial coordinates $\mathbf{t}$. $\epsilon$ is the reconstruction error. In vision, stimulus $x$ is a 2D pixel map. In the reconstruction process, each $\phi_m$ is a filter and any stimulus is a linear combination of filters in the model. Importantly, the filter shapes stored in $\Phi$ are held constant across stimuli, while parameters $\Theta$ are fitted to each stimulus. By encoding, any visual stimulus remaps to an interpolation of this subspace by a choice of the parameters. However, this setup is with the important caveat that the codebook is overcomplete, meaning that the codebook axes are non-orthogonal and hence an image can be equally well represented by a continuum of parameter choices, over which the best one is chosen (see \textbf{Optimization and Sparsity}).\\
+
+In audition, reconstruction looks largely similar and there is also no constraint for the codes to be orthogonal. Now, the model is set up as below: 
+\begin{center}
+  \begin{align}
+    \Theta & = \begin{bmatrix}
+      \mathbf{s} & \boldsymbol{\tau}
+    \end{bmatrix}^{\top}\notag\\
+    \mathbf{t} & = \begin{bmatrix}
+      t
+    \end{bmatrix}^{\top}\notag\\
+    x(t) & = \overset{\hat{x}}{\overline{\sum_m\sum_is_m^{i} \phi_m(t - \tau_m^{i})}} + \epsilon(t)\label{Eq3}
+  \end{align}
+\end{center}
+$\mathbf{s}$ and $\boldsymbol{\tau}$ are length-$M$ vectors, each element corresponding to a basis function $\phi_m$. Each $s_m$ and $\tau_m$ respectively code for the activation and temporal position for an "instance" of filter $\phi_m$ and are vectors indexed by $i$. The existence of these instances marks an ostensible difference between the model here and that in \textcite{olshausenSparseCodingOvercomplete1997} which contains an otherwise similar linear combination. In effect, having these instances creates an extended filter bank for each stimulus that is fitted on encoding. For each stimulus, trains of $s_m^i$ and $\tau_m^i$ are allowed to vary in length and magnitude for a representation that minimizes the reconstruction error. \\
+
+The inclusion of the free time lag parameter in \textcite{smithEfficientAuditoryCoding2006} allows the coding to be time-relative. In \textcite{olshausenSparseCodingOvercomplete1997}, as seen in equation \eqref{Eq2}, all filters are evaluated on all image locations indiscriminately for reconstructing any stimulus. Taking the filter-neuron analogy, each neuron has a RF (receptive field) spanning the entire retina. From this setup, local selectivity is achieved by zero-padding the receptive-field in a space-absolute manner. On the other hand, in \textcite{smithEfficientAuditoryCoding2006} filter evaluations are not fixed for distinct stimuli. Specifically, a filter here can be thought of as a window that can be placed \textit{anywhere} along the time axis to encode an auditory stimulus. Local selectivity of each instance of a filter is specified by $\tau_m^i$ that selects the window location. \\
+
+In comparison to the vision model, which effectively allows one instance only for every filter, this setup is more appropriate for auditory stimuli. With static visual images, neurons with fixed spatial selectivity are compatible with neurobiological observations, as V1 simple cells are tiled in a retinotopic manner. A neuron's RF does not change from one stimulus to another and is fixed to a location on the retina. The cortical augmentation needed for vision is also supported by the fixed assigment scheme: the retinal region that undergoes augmentation (fovea) is fixed across stimuli. Audition, on the other hand, concerns the coordinate system of time that does not come with natural boundaries. Auditory neurons hence need to optimize both firing times and rates to code for this live stream of information. Agnostic to this feed-forward live encoding mechanism in the mammalian brain, numerically optimizing a train of activations for a given codebook in every bounded signal sample suffices in the present endeavor for an optimal coding scheme. With the optimized train of activation stored in $s_m$, the reconstruction process breaks down to a convolution: 
+\begin{center}
+  \begin{align}
+    \hat{x}(t)  & = \sum_m s_m * \phi_m[t]\label{Eq4}\\
+    & = \sum_m \sum_i s_m^i \phi_m[t - i]\notag
+  \end{align}
+\end{center}
+\\
+ However, this operation needs high precision for the analog sequence $s_m$. This not only means a high number of parameters to be fitted but also might not be biologically plausible, as the analog activation is accessed only through binary spikes that have limited dynamic ranges for firing rates. Hence, this precision is arguably unnecessary. More importantly and due to the sparse coding principle, neurons deviate from basis firing rates for only a small fraction of time. Hence, the practical implementation in \textcite{smithEfficientAuditoryCoding2006} encodes stimuli with sparse neural activation trains that take non-zero values only at a certain set of times $\tau_m^i$ with activation $s_m^i$ - details in \textbf{Optimization and Sparsity}.
+
+\subsection{Optimization and Sparsity} 
+  \label{sub:constraints}
+
+ Given these setups, the shared goal for both papers is operationalized as finding $\Phi^*$ to best approximate the true distribution of natural stimuli $P^*$: 
+ \begin{center}
+  \begin{align}
+    \Phi^* &= \arg\min_\Phi[KL(P_{X|\Phi}||P^*_{X})] \label{Eq5}
+  \end{align}
+ \end{center}
+ Equation \eqref{Eq5} is further broken down
+\begin{center}
+  \begin{align}
+    KL(P_{X|\Phi}||P^*_{X}) &= \int P^*(x)log\frac{P^*(x)}{P(x|\Phi)} dx\\
+    & = -H(P^*_X)-\int P^*(x)\log P(x|\Phi) dx \notag  \end{align}
+\end{center} 
+Hence minimizing KL is equivalent to maximizing the expected log likelihood over the true distribution
+\begin{center}
+  \begin{align}
+    \arg\min_\Phi[KL] &= \arg\max_\Phi[\mathbb{E}_{P^*(x)}[\log P(x|\Phi)]
+  \end{align}
+\end{center}
+If the samples are drawn from the true distribution, the above is the same as the sample log-likelihood, which can be further broken down into
+\begin{center}
+  \begin{align}
+    \Phi^* &= \arg\max_\Phi[\overset{\text{L}}{\overline{\log P(X|\Phi, \Theta) + \log P(\Theta|\Phi)}}]
+  \end{align}
+\end{center}
+Unable to integrate over $\Theta$, both papers takes the approximation such that
+\begin{center}
+  \begin{align}
+    \Phi^* &= \arg\max_\Phi[\max_{\Theta}[L]]
+  \end{align}
+\end{center}
+
+With this setup, the problem can be solved with nested optimization which takes iterations optimizing $\Theta$ and $\Phi$, holding the other constant. In this framework, the papers' optimization approaches are similar: sparsity is implemented in optimization for $\Theta$ in the encoding step, and the expected sum of square reconstruction errors $\langle\sum_{\mathbf{t}} \epsilon(\mathbf{t})^2 \rangle=\langle \sum_{\mathbf{t}} (x(\mathbf{t}) - \hat{x}(\mathbf{t}))^2\rangle$ is minimized w.r.t. $\Phi$ in the learning step, corresponding to maximum-likelihood learning for normally distributed errors. In both cases, learning over $\Phi$ given $\Theta$ is implemented based on gradient ascent, with the additional feature of basis expansion or shrinkage based on activity in \textcite{smithEfficientAuditoryCoding2006}.\\
+
+In \textcite{olshausenSparseCodingOvercomplete1997}, overcompleteness is an additional consideration for the code. Specifically, by assigning more basis functions than effective dimensionality of inputs (natural images), an overcomplete code allows for a continuum of activations able to explain an image. The authors choose this setup for smoothness of changes in the activation space accompanying small changes in the image causes (small translations or scaling), which is not the case for the less flexible complete codes. In this codebook, an image is explained by a subspace of the activation space, and hence no unique code assignment is possible. Instead, encoding can include an additional choice of a prior distribution of the activations. Specifically, $\Theta = \{s_m\}$ is learned for each visual stimulus by minimizing an energy function 
+ \begin{center}
+  \begin{align}
+    E(x, \Theta | \Phi) & = \sum_{\mathbf{t}}\epsilon(\mathbf{t})^2 + \lambda\sum_mF(s_m)\notag\\
+    E'(s_m) &= -2\sum_{\mathbf{t}}\phi_m(\mathbf{t})\epsilon(\mathbf{t}) + \lambda F'(s_m)
+  \end{align}
+ \end{center}
+where $F(x) = \log(1 + x^2), \lambda = 2\sigma_N^2$, and $\sigma_N^2$ is the variance of the Gaussian residuals. Choosing $s_m$ so that $E'(s_m)$ above is 0 corresponds to choosing a Cauchy prior for the activation parameters, which has the desired properties of a sparse code. No closed-form solution of the above is possible, and in the original paper the conjugate-gradient method is used for numerical optimization. In addition, a L2 normalization layer is added to this optimization to prevent the trivial solution of high-magnitude filters that push all activations low, increasing log likelihood via satisfying the Cauchy prior. Note that a range of choices of $\lambda$ yield qualitatively similar results. \\
+
+In \textcite{smithEfficientAuditoryCoding2006}, no explicit constraints are laid for codebook dimensions, and hence the codebook is also likely overcomplete. Without a straightforward sparse prior for neuron spiking times $\tau_m^i$, the encoding step is done iteratively with a matching-pursuit algorithm. Specifically, the auditory stimulus is projected onto the full extended bank of filters (so that all possible $\tau_m^i$ are taken). On each iteration, the $\tau_m^i$ resulting in the largest projection magnitude $s_m^i$ is accepted, and the residual signal is taken to the next iteration. The process is halted when the maximum residual activation magnitude is below a threshold. If the basis set is overcomplete, the process would preferentially represent a signal using as little basis functions as possible, achieving sparsity in this manner. 
+
+\subsection{Simulation Results}%
+  \label{sub:Simulation Results}
+\subsubsection{Preprocessing and stimuli}%
+  \label{sub:Preprocessing and stimuli}
+\textcite{olshausenSparseCodingOvercomplete1997} builds on previous tests for validating the algorithm's performance on artificial data \cite{Olshausen1996}, which has shown that the filters obtained from the training abovementioned is able to recover the filters used to sparsely construct a set of artificial stimuli. In the present paper (\cite{olshausenSparseCodingOvercomplete1997}), simulation with natural images are done after spherically truncating the natural data, whitening it so that it has equal variances along all eigenvectors, and applying a spatial low-pass filter to cut out high-frequency energy. Note, however, these preprocessing steps are mostly done to reduce training cost and artificial (rectangular sampling) features in the datasets, and would not cast qualitative differences to the training results on convergence. After the set of pre-processing steps, imaged are patched into $12 \times 12$-pixel patches to train $144$ basis functions. In \textcite{smithEfficientAuditoryCoding2006}, not much preprocessing is done and the input is divided up into natural sounds (environmental sounds + mammalian vocolizations), human speech, and artificial sounds. 
+\subsubsection{Results}%
+  \label{sub:Results}
+Both studies achieve qualitative similarity between filters from the above learning steps and biological neural RFs observed in mammalian V1 simple cells/recvor filters in cat auditory nerves, when the codebooks are trained with natural stimuli. Specifically, both sets of simulation results capture the wavelet-format seen in biological RFs. V1 simple cells' selection of spatial frequency, orientation, and retinal location is observed in \textcite{olshausenSparseCodingOvercomplete1997}'s simulation, with slight discrepancies for macaque V1 simple cells seem to devote higher proportions coding for low frequencies than high frequencies, which is not the case in simulation. This could be due to lack of precision in RF mapping as high-frequency RFs, but this could also be due to that retinal photoreceptor tiling is concentrated to the fovea or other nonlinearities biasing the goal of biological cortical coding away from faithful reconstruction of the incoming stimulus. On the other hand, in \textcite{smithEfficientAuditoryCoding2006}, filter banks trained for natural sounds (environmental sounds + mammalian vocalization) as well as human vocalizations faithfully reproduce the shapes of recvor filters. In particular, both the frequency-bandwidth relationship across different frequencies and the temporal asymmetries of the filters are replicated. 
+
+\section{Conclusion and Discussion}
+In sum, both papers use sparsity as a constraint in encoding along with gradient-based optimization for codebooks to minimize KL divergence from the generative distribution of these codebooks to the true distribution of natural stimuli. Codebooks optimized in this manner faithfully reproduce natural filters in biological RFs, and hence sparse coding minimizing natural stimuli reconstruction errors seems to present a probable coding principle in early sensory pathways. Notably, vision and audition as explored in the two papers operate on orthogonal natural dimensions. In static vision, coding takes place for 2-D images on a slice of time; in audition, coding takes place for scalar vibration amplitudes that vary over time. Combining the set of results, it is tempting for one to conclude that sparsity is a principle in neural coding both over a population of neurons, and across time. \\
+
+Moreover, \textcite{smithEfficientAuditoryCoding2006} makes the claim that human speech is adapted to the mammalian coding apparatus for auditory signals from recovering recvor filters by training the codebook-optimizing algorithm solely from human speech data. This is a reasonable observation and important in discussions of the origin of speech, and it would be interesting if an extension can be taken concerning the emergence of caliography. \\
+
+However, the papers come with limitations, leaving a space of unknown for further research to address. Vision does not actually treat static images, and spatial arrangements are relevant for auditory neurons that are arranged tonotopically from the frequency-mapped sensory periphery. It is interesting to see if temporal and population sparsity is important for movies of visual inputs and frequency-mapped auditory inputs. From this investigation, one can study to what extent the codebook optimization is achieved from evolution (optimization of an ideal sensory periphery such as the inner ear), in comparison to unsupervised learning through plasticity in primary sensory cortices. \\  
+
+In addition, the goal of all primary senses is to infer from the \textit{train} of natural stimuli a \textit{trajectory} of ecologically salient experiences. Taking the case of vision, it is important to be able to reconstruct a smooth trajectory of events (translations and rotations of visual targets) from a temporal sequence of the simple cell code. Further simulation work with visual movies could stem from the theoretical robustness to translations & scaling that \textcite{olshausenSparseCodingOvercomplete1997}'s characterization of the overcomplete codebook offers. In this respect, other coding principles can be of added value, such as predictive coding and actionability constraints \cite{Hohwy2008, Dorrell2023}. Investigation of the interplay of these principles at different levels of cortical processing or depths of neural networks could inform valuable arguments for universal principles underlying mammalian cortical neural coding. \\
+
+%------------------------------------------------
+
+% \printbibliography 
+\end{document}
+

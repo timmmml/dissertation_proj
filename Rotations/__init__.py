@@ -43,9 +43,15 @@ def integrate_velocities(omega, dt = 1.0):
     """
     assert omega.shape[-1] == 3
     qt = torch.tensor([1.0, 0.0, 0.0, 0.0], device = omega.device) # initial quaternion
+    dim = omega.dim()
+    i = 3
+    while dim > 2:
+        qt = qt.unsqueeze(0).expand(omega.shape[-i], -1)
+        i += 1
+        dim -= 1
     q_list = exp_quat(omega * dt)
-    for i in range(omega.shape[0]):
-        q = q_list[i, :]
+    for i in range(omega.shape[-2]):
+        q = q_list[..., i, :]
         qt = q_mult(q, qt, scalar_first=True)  # Left-multiply to accumulate rotations
     return qt
 
@@ -119,6 +125,31 @@ def q_mult(q1, q2, scalar_first = True):
     q_out = torch.matmul(M, q.unsqueeze(-1)).squeeze(-1)
 
     return q_out
+
+def q_v_mult(q, v, scalar_first=True):
+    """
+    Rotate a vector v using a quaternion q.
+
+    Args:
+        q (torch.Tensor): A quaternion of shape (., 4).
+        v (torch.Tensor): A vector of shape (., 3).
+        scalar_first (bool): Whether the scalar part of q is the first element.
+
+    Returns:
+        torch.Tensor: The rotated vector of shape (., 3).
+    """
+    assert q.shape[-1] == 4 and v.shape[-1] == 3
+
+    if scalar_first:
+        w, x, y, z = q[..., 0], q[..., 1], q[..., 2], q[..., 3]
+    else:
+        x, y, z, w = q[..., 0], q[..., 1], q[..., 2], q[..., 3]
+
+    v_q = torch.cat([torch.zeros_like(v[..., :1]), v], dim=-1)  # Shape (., 4)
+    q_conj = torch.stack([w, -x, -y, -z], dim=-1) if scalar_first else torch.stack([-x, -y, -z, w], dim=-1)
+    v_rotated = q_mult(q_mult(q, v_q, scalar_first), q_conj, scalar_first)
+
+    return v_rotated[..., 1:]  # Shape (., 3)
 
 @jit(nopython=True)
 def q_mult_np(q1, q2, scalar_first=True):
@@ -216,3 +247,15 @@ def quat_to_euler(q):
     """
     assert q.shape[-1] == 4
     return R.from_quat(q.cpu().numpy()).as_euler('xyz')
+
+def quat_to_mat(q): 
+    """Convert a quaternion to a rotation matrix.
+
+    Args:
+        q(torch.Tensor): A tensor of shape (.,4) representing the quaternion.
+
+    Returns:
+        torch.Tensor: A tensor of shape (.,3,3) representing the rotation matrix.
+    """
+    assert q.shape[-1] == 4
+    return torch.tensor(R.from_quat(q.cpu().numpy(), scalar_first=True).as_matrix()).to(q.device)

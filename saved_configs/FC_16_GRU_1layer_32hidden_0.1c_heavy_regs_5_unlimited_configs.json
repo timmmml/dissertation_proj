@@ -1,0 +1,44 @@
+{
+    "model_specs": {
+        "model_name": "FC_RNN",
+        "model_path": "Network_models.RNN_models",
+        "model_params": {
+            "input_size": 24,
+            "hidden_size": 32,
+            "num_layers": 1,
+            "output_size": 3,
+            "cell_type": "GRU",
+            "stepwise": true,
+            "FC_dim": 16
+        }
+    },
+    "model_id": "FC_16_GRU_1layer_32hidden",
+    "device": "cuda",
+    "scheduler": true,
+    "optimizer_specs": {
+        "optimizer_name": "Adam",
+        "optimizer_params": {
+            "lr": 0.01
+        }
+    },
+    "distance_loss": "geodesic_gradual",
+    "gradual_loss_weighting": "constant+linear",
+    "regularisation_loss": "L2",
+    "distance_weight": 1,
+    "output_regs_weight": 5,
+    "silence_activity": false,
+    "training_config": {
+        "task_id": "0.1c",
+        "batch_size": 2048,
+        "mini_batch_size": 128,
+        "seq_len": 100,
+        "prep_phase": 50,
+        "data_save_path": "/home/timmy/nonnormal/dummy/mental-rotations/training_data/Data_0.1c.pth",
+        "object_path": "/home/timmy/nonnormal/dummy/mental-rotations/data/cube_mesh/cube_mesh_full.pth",
+        "output_noise": 0.0,
+        "epochs_to_calculate": 30
+    },
+    "save_path": "/home/timmy/nonnormal/dummy/mental-rotations/saved_models/FC_16_GRU_1layer_32hidden_0.1c_model_gradual_heavy_regs_5",
+    "log_path": "/home/timmy/nonnormal/dummy/mental-rotations/logs/FC_16_GRU_1layer_32hidden_0.1c_model_gradual_heavy_regs_5",
+    "check_path": "/home/timmy/nonnormal/dummy/mental-rotations/saved_models/FC_16_GRU_1layer_32hidden_model_checkpoints_gradual_heavy_regs_5"
+}

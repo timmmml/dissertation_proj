@@ -4,9 +4,7 @@ Here I define the basic functionalities within the base DataGenerator Class.
 """
 
 import torch
-from torch.utils.data import DataLoader
-from torch.utils.data import ConcatDataset
-from torch.utils.data import random_split
+from torch.utils.data import DataLoader, RandomSampler
 from .RotationDataset import RotationDataset
 
 class DataGenerator:
@@ -15,17 +13,24 @@ class DataGenerator:
         self.mini_batch_size = additional_config.get('mini_batch_size', 128)
         self.train_data = None
         self.val_data = None
+        self.generator = None
 
     def generate(self, n_samples, val_size = None, record = False):
+        self.train_data = None
+        self.val_data = None
         if val_size is None:
             val_size = int(n_samples * 0.1)
         train_data = self.generate_data(n_samples)
-        val_data = self.generate_data(val_size)
         if record:
             self.train_data = train_data
+            train_loader = DataLoader(train_data, batch_size=self.mini_batch_size, shuffle=False, sampler=RandomSampler(train_data, generator=self.generator)) if self.generator is not None else DataLoader(train_data, batch_size=self.mini_batch_size, shuffle=True)
+        del train_data
+        val_data = self.generate_data(val_size)
+        if record: 
             self.val_data = val_data
-            train_loader = DataLoader(train_data, batch_size=self.mini_batch_size, shuffle=True)
-            val_loader = DataLoader(val_data, batch_size=self.mini_batch_size, shuffle=True)
+            val_loader = DataLoader(val_data, batch_size=self.mini_batch_size, shuffle=False, sampler=RandomSampler(val_data, generator=self.generator)) if self.generator is not None else DataLoader(val_data, batch_size=self.mini_batch_size, shuffle=True)
+        del val_data
+        if record:
             return train_loader, val_loader
         return train_data, val_data
 
